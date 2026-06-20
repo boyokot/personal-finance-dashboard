@@ -64,7 +64,8 @@ async function main(){
   try{
     const [ring, op, trx] = await Promise.all([loadSheet('Ringkasan'), loadSheet('Opname'), loadSheet('Transaksi')]);
     const map={}; ring.forEach(r=>{if(r.length>=2)map[r[0]]=r[1]});
-    const akun=[]; op.slice(1,5).forEach(r=>{if(r.length>=4)akun.push({name:r[1], actual:n(r[3]), diff:n(r[4])})});
+    const validAccounts=new Set(['Tunai','Bank BSI','E-wallet DANA','Piutang']);
+    const akun=[]; op.forEach(r=>{if(r.length>=4 && validAccounts.has(String(r[1]))) akun.push({name:r[1], actual:n(r[3]), diff:n(r[4])})});
     let totalIn=0,totalOut=0; const monthly={}, dates=[], catExp={}, catInc={}, last=[];
     trx.slice(1).forEach(r=>{
       if(r.length<6) return; const [tgl,ket,kat,tipe,nom,acc]=r; const val=n(nom); const d=parseDate(tgl); if(d){dates.push(d); const key=monthName(d); monthly[key]??={Pemasukan:0,Pengeluaran:0,Transfer:0}; if(tipe==='Pemasukan')monthly[key].Pemasukan+=val; else if(tipe==='Pengeluaran')monthly[key].Pengeluaran+=val; else if(tipe==='Transfer')monthly[key].Transfer+=val;}
