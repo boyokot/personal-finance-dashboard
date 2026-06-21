@@ -25,7 +25,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 21 Jun 2026 21:00 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 21 Jun 2026 21:22 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option><option value="2026-06" selected>Juni 2026</option><option value="2026-05">Mei 2026</option><option value="2026-04">April 2026</option><option value="2026-03">Maret 2026</option><option value="2026-02">Februari 2026</option><option value="2026-01">Januari 2026</option></select>
@@ -70,16 +70,16 @@ function initCharts(){
   ]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
   // Saldo per Akun (bar horizontal)
-  charts.accounts=new Chart(document.getElementById('accounts'),{type:'bar',data:{labels:akunData.map(function(a){return a.name}),datasets:[{label:'Saldo',data:akunData.map(function(a){return a.actual}),backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc'],borderRadius:8}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return rp(c.raw)}}}},scales:{x:{ticks:{callback:function(v){return shortRp(v)}}}}}}});
+  charts.accounts=new Chart(document.getElementById('accounts'),{type:'bar',data:{labels:akunData.map(function(a){return a.name}),datasets:[{label:'Saldo',data:akunData.map(function(a){return a.actual}),backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc'],borderRadius:8}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return rp(c.raw)}}}},scales:{x:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
   // Kategori Pengeluaran (donut) - kosong dulu, diisi applyFilter
   charts.expenseCat=new Chart(document.getElementById('expenseCat'),{type:'doughnut',data:{labels:[],datasets:[{data:[],backgroundColor:['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#4dabf7','#b197fc','#f783ac','#63e6be','#91a7ff','#ced4da'],borderColor:'#111b2e',borderWidth:2}]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.label+': '+rp(c.raw)}}}}}});
 
   // Netto per Bulan (line)
-  charts.netto=new Chart(document.getElementById('netto'),{type:'line',data:{labels:months,datasets:[{label:'Netto',data:netto,borderColor:'#ffd43b',backgroundColor:'rgba(255,212,59,.15)',fill:true,tension:.35}]},options:{plugins:{tooltip:{callbacks:{label:function(c){return'Netto: '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}}});
+  charts.netto=new Chart(document.getElementById('netto'),{type:'line',data:{labels:months,datasets:[{label:'Netto',data:netto,borderColor:'#ffd43b',backgroundColor:'rgba(255,212,59,.15)',fill:true,tension:.35}]},options:{plugins:{tooltip:{callbacks:{label:function(c){return'Netto: '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
   // Anggaran
-  charts.anggaran=new Chart(document.getElementById('chartAnggaran'),{type:'bar',data:{labels:anggaranLabels,datasets:[{label:'Anggaran',data:anggaranBudget,backgroundColor:'rgba(77,171,247,.7)'},{label:'Terpaku',data:anggaranUsed,backgroundColor:'rgba(255,107,107,.7)'}]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}}});
+  charts.anggaran=new Chart(document.getElementById('chartAnggaran'),{type:'bar',data:{labels:anggaranLabels,datasets:[{label:'Anggaran',data:anggaranBudget,backgroundColor:'rgba(77,171,247,.7)'},{label:'Terpaku',data:anggaranUsed,backgroundColor:'rgba(255,107,107,.7)'}]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
   // Tabungan
   charts.tabungan=new Chart(document.getElementById('chartTabungan'),{type:'doughnut',data:{labels:tabLabels,datasets:[{data:tabValues,backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc','#ff6b6b'],borderColor:'#111b2e',borderWidth:2}]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.label+': '+rp(c.raw)}}}}}});
