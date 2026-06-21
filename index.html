@@ -1,6 +1,6 @@
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard Keuangan Pribadi</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js?v=2"></script>
 <style>
 :root{--bg:#0b1220;--card:#111b2e;--card2:#16233a;--txt:#e6edf7;--muted:#91a4bd;--green:#2ecc71;--red:#ff6b6b;--blue:#4dabf7;--yellow:#ffd43b;--purple:#b197fc}
 *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#07101f,#111827 60%,#172033);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -25,7 +25,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 21 Jun 2026 20:25 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 21 Jun 2026 20:39 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option><option value="2026-06" selected>Juni 2026</option><option value="2026-05">Mei 2026</option><option value="2026-04">April 2026</option><option value="2026-03">Maret 2026</option><option value="2026-02">Februari 2026</option><option value="2026-01">Januari 2026</option></select>
