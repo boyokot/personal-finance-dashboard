@@ -1,93 +1,40 @@
 <!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Keuangan Pribadi</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root{--bg:#0b1220;--card:#111b2e;--txt:#e6edf7;--muted:#91a4bd;--green:#2ecc71;--red:#ff6b6b;--blue:#4dabf7;--yellow:#ffd43b;--purple:#b197fc}
-    *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#07101f,#111827 60%,#172033);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}.container{max-width:1280px;margin:auto;padding:24px}.header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}h1{margin:0;font-size:30px;letter-spacing:-.5px}.sub{color:var(--muted);margin-top:6px}.btn{background:#1d3557;border:1px solid #315982;color:white;border-radius:10px;padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-block;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:rgba(17,27,46,.92);border:1px solid #233653;border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.22)}.klabel{color:var(--muted);font-size:13px}.kvalue{font-size:26px;font-weight:800;margin-top:8px}.good{color:var(--green)}.bad{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}.section{margin-top:18px}.charts{display:grid;grid-template-columns:2fr 1fr;gap:16px}.charts2{display:grid;grid-template-columns:1fr 1fr;gap:16px}canvas{max-height:360px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;border-bottom:1px solid #253854;text-align:left}th{color:#bdd2ee}td.num{text-align:right;font-variant-numeric:tabular-nums}.pill{padding:4px 9px;border-radius:999px;font-size:12px}.pemasukan{background:rgba(46,204,113,.16);color:#8ff0b3}.pengeluaran{background:rgba(255,107,107,.16);color:#ffb0b0}.transfer{background:rgba(77,171,247,.16);color:#add8ff}.footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}.error{background:#3b1720;border:1px solid #8f2d3f;color:#ffd7dd;padding:14px;border-radius:12px;margin-bottom:16px;display:none}@media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr}.header{display:block}.actions{margin-top:12px}.btn{margin:6px 6px 0 0}h1{font-size:24px}}
-  </style>
-</head>
-<body>
-<div class="container">
-  <div class="header">
-    <div>
-      <h1>Dashboard Keuangan Pribadi</h1>
-      <div class="sub" id="subtitle">Memuat data live dari Google Sheets...</div>
-    </div>
-    <div class="actions">
-      <a class="btn" href="javascript:location.reload()">🔄 Refresh Data</a>
-      <a class="btn" target="_blank" href="https://docs.google.com/spreadsheets/d/1ks5j3OWyWTMN5SvK3Glm6juA9dspGTJqjFx1sS_vB7k/edit">📊 Buka Spreadsheet</a>
-    </div>
-  </div>
-  <div id="error" class="error"></div>
-  <div class="grid">
-    <div class="card"><div class="klabel">Kas Aktual</div><div class="kvalue good" id="kasAktual">-</div></div>
-    <div class="card"><div class="klabel">Piutang</div><div class="kvalue blue" id="piutang">-</div></div>
-    <div class="card"><div class="klabel">Kas + Piutang</div><div class="kvalue yellow" id="kasPiutang">-</div></div>
-    <div class="card"><div class="klabel">Total Transaksi</div><div class="kvalue" id="totalTrans">-</div></div>
-    <div class="card"><div class="klabel">Total Pemasukan</div><div class="kvalue good" id="totalIn">-</div></div>
-    <div class="card"><div class="klabel">Total Pengeluaran</div><div class="kvalue bad" id="totalOut">-</div></div>
-    <div class="card"><div class="klabel">Saldo/Netto</div><div class="kvalue yellow" id="saldo">-</div></div>
-    <div class="card"><div class="klabel">Rasio Pengeluaran</div><div class="kvalue" id="ratio">-</div></div>
-  </div>
-  <div class="section charts"><div class="card"><h3>Arus Kas Bulanan</h3><canvas id="monthly"></canvas></div><div class="card"><h3>Saldo per Akun</h3><canvas id="accounts"></canvas></div></div>
-  <div class="section charts2"><div class="card"><h3>Kategori Pengeluaran Terbesar</h3><canvas id="expenseCat"></canvas></div><div class="card"><h3>Netto per Bulan</h3><canvas id="netto"></canvas></div></div>
-  <div class="section charts2"><div class="card"><h3>Saldo Aktual per Akun</h3><table id="accountTable"></table></div><div class="card"><h3>Transaksi Terakhir</h3><table id="lastTable"></table></div></div>
-  <div class="footer">Dashboard permanen via GitHub Pages · data live via Google Sheets public read · no-cache client render</div>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Keuangan Pribadi</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--bg:#0b1220;--card:#111b2e;--card2:#16233a;--txt:#e6edf7;--muted:#91a4bd;--green:#2ecc71;--red:#ff6b6b;--blue:#4dabf7;--yellow:#ffd43b;--purple:#b197fc}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#07101f,#111827 60%,#172033);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.container{max-width:1280px;margin:auto;padding:24px} .header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px}
+h1{margin:0;font-size:30px;letter-spacing:-.5px} .sub{color:var(--muted);margin-top:6px} .btn{background:#1d3557;border:1px solid #315982;color:white;border-radius:10px;padding:10px 14px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px} .card{background:rgba(17,27,46,.92);border:1px solid #233653;border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.22)}
+.klabel{color:var(--muted);font-size:13px} .kvalue{font-size:26px;font-weight:800;margin-top:8px} .good{color:var(--green)} .bad{color:var(--red)} .blue{color:var(--blue)} .yellow{color:var(--yellow)}
+.section{margin-top:18px} .charts{display:grid;grid-template-columns:2fr 1fr;gap:16px} .charts2{display:grid;grid-template-columns:1fr 1fr;gap:16px} canvas{max-height:360px}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;border-bottom:1px solid #253854;text-align:left} th{color:#bdd2ee} td.num{text-align:right;font-variant-numeric:tabular-nums} .pill{padding:4px 9px;border-radius:999px;font-size:12px}
+.pemasukan{background:rgba(46,204,113,.16);color:#8ff0b3} .pengeluaran{background:rgba(255,107,107,.16);color:#ffb0b0} .transfer{background:rgba(77,171,247,.16);color:#add8ff}
+.footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
+@media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
+</style></head><body><div class="container">
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 · update 21 Jun 2026 12:33 WIB</div></div><button class="btn" onclick="location.reload(true)">🔄 Refresh</button></div>
+<div class="grid">
+ <div class="card"><div class="klabel">Kas Aktual</div><div class="kvalue good">Rp 14,3 jt</div></div>
+ <div class="card"><div class="klabel">Piutang</div><div class="kvalue blue">Rp 600 rb</div></div>
+ <div class="card"><div class="klabel">Kas + Piutang</div><div class="kvalue yellow">Rp 14,9 jt</div></div>
+ <div class="card"><div class="klabel">Total Transaksi</div><div class="kvalue">273</div></div>
+ <div class="card"><div class="klabel">Total Pemasukan</div><div class="kvalue good">Rp 24,5 jt</div></div>
+ <div class="card"><div class="klabel">Total Pengeluaran</div><div class="kvalue bad">Rp 9,7 jt</div></div>
+ <div class="card"><div class="klabel">Saldo/Netto</div><div class="kvalue yellow">Rp 14,9 jt</div></div>
+ <div class="card"><div class="klabel">Rasio Pengeluaran</div><div class="kvalue">39.5%</div></div>
 </div>
+<div class="section charts"><div class="card"><h3>Arus Kas Bulanan</h3><canvas id="monthly"></canvas></div><div class="card"><h3>Saldo per Akun</h3><canvas id="accounts"></canvas></div></div>
+<div class="section charts2"><div class="card"><h3>Kategori Pengeluaran Terbesar</h3><canvas id="expenseCat"></canvas></div><div class="card"><h3>Netto per Bulan</h3><canvas id="netto"></canvas></div></div>
+<div class="section charts2"><div class="card"><h3>Saldo Aktual per Akun</h3><table><tr><th>Akun</th><th class="num">Saldo Aktual</th><th class="num">Selisih Opname</th></tr><tr><td>Tunai</td><td class="num">Rp 1.379.500</td><td class="num good">Rp 0</td></tr><tr><td>Bank BSI</td><td class="num">Rp 12.877.140</td><td class="num good">Rp 0</td></tr><tr><td>E-wallet DANA</td><td class="num">Rp 997</td><td class="num good">Rp 20</td></tr><tr><td>Piutang</td><td class="num">Rp 600.000</td><td class="num good">Rp 600.000</td></tr></table></div><div class="card"><h3>Transaksi Terakhir</h3><table><tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th></tr><tr><td>2026-06-20</td><td>OPNAME 2026-06-20 - Koreksi pembulatan opname</td><td><span class="pill pemasukan">Pemasukan</span></td><td class="num">Rp 1</td></tr><tr><td>2026-06-20</td><td>OPNAME 2026-06-20 - Catat piutang</td><td><span class="pill pemasukan">Pemasukan</span></td><td class="num">Rp 600.000</td></tr><tr><td>2026-06-20</td><td>OPNAME 2026-06-20 - Koreksi saldo E-wallet DANA</td><td><span class="pill pemasukan">Pemasukan</span></td><td class="num">Rp 20</td></tr><tr><td>2026-06-20</td><td>OPNAME 2026-06-20 - Koreksi saldo Tunai</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 1.209.000</td></tr><tr><td>2026-06-20</td><td>Jenius Credit Card</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 54.964</td></tr><tr><td>2026-06-20</td><td>Gaji Simping</td><td><span class="pill pemasukan">Pemasukan</span></td><td class="num">Rp 765.000</td></tr><tr><td>2026-06-19</td><td>Internet</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 15.500</td></tr><tr><td>2026-06-17</td><td>Opencode go</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 100.500</td></tr><tr><td>2026-06-14</td><td>Deterjen</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 3.000</td></tr><tr><td>2026-06-14</td><td>Nipis Madu + cemilan</td><td><span class="pill pengeluaran">Pengeluaran</span></td><td class="num">Rp 7.000</td></tr></table></div></div><div class="footer">Generated from Google Sheets · 1ks5j3OWyWTMN5SvK3Glm6juA9dspGTJqjFx1sS_vB7k</div></div>
 <script>
-const SID='1ks5j3OWyWTMN5SvK3Glm6juA9dspGTJqjFx1sS_vB7k';
-const sheetUrl='https://docs.google.com/spreadsheets/d/'+SID+'/gviz/tq?tqx=out:json&sheet=';
-const charts=[];
 Chart.defaults.color='#b8c7dc'; Chart.defaults.borderColor='rgba(255,255,255,.08)';
-function rp(v){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(v)||0)}
-function short(n){n=Number(n)||0; const sign=n<0?'-':''; n=Math.abs(n); if(n>=1e9)return sign+'Rp '+(n/1e9).toFixed(1).replace('.',',')+' M'; if(n>=1e6)return sign+'Rp '+(n/1e6).toFixed(1).replace('.',',')+' jt'; if(n>=1e3)return sign+'Rp '+Math.round(n/1e3)+' rb'; return sign+'Rp '+Math.round(n)}
-function n(x){ if(x==null||x==='')return 0; if(typeof x==='number')return x; return Number(String(x).replace(/Rp/g,'').replace(/\./g,'').replace(/,/g,'').trim())||0 }
-function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-async function loadSheet(name){
-  const res=await fetch(sheetUrl+encodeURIComponent(name)+'&cacheBust='+Date.now(), {cache:'no-store'});
-  const txt=await res.text();
-  const json=JSON.parse(txt.substring(txt.indexOf('{'), txt.lastIndexOf('}')+1));
-  return (json.table.rows||[]).map(r=>(r.c||[]).map(c=>c? (c.f ?? c.v ?? '') : ''));
-}
-function parseDate(v){
-  if(typeof v==='number') return new Date(Date.UTC(1899,11,30+Math.floor(v)));
-  const s=String(v||''); const m=s.match(/Date\((\d+),(\d+),(\d+)/); if(m) return new Date(Date.UTC(+m[1],+m[2],+m[3]));
-  const d=new Date(s.slice(0,10)); return isNaN(d)?null:d;
-}
-function monthName(d){return d.toLocaleDateString('id-ID',{month:'long',year:'numeric',timeZone:'UTC'})}
-function draw(id,type,data,options){charts.push(new Chart(document.getElementById(id),{type,data,options}))}
-async function main(){
-  try{
-    const [ring, op, trx] = await Promise.all([loadSheet('Ringkasan'), loadSheet('Opname'), loadSheet('Transaksi')]);
-    const map={}; ring.forEach(r=>{if(r.length>=2)map[r[0]]=r[1]});
-    const validAccounts=new Set(['Tunai','Bank BSI','E-wallet DANA','Piutang']);
-    const akun=[]; op.forEach(r=>{if(r.length>=4 && validAccounts.has(String(r[1]))) akun.push({name:r[1], actual:n(r[3]), diff:n(r[4])})});
-    let totalIn=0,totalOut=0; const monthly={}, dates=[], catExp={}, catInc={}, last=[];
-    trx.slice(1).forEach(r=>{
-      if(r.length<6) return; const [tgl,ket,kat,tipe,nom,acc]=r; const val=n(nom); const d=parseDate(tgl); if(d){dates.push(d); const key=monthName(d); monthly[key]??={Pemasukan:0,Pengeluaran:0,Transfer:0}; if(tipe==='Pemasukan')monthly[key].Pemasukan+=val; else if(tipe==='Pengeluaran')monthly[key].Pengeluaran+=val; else if(tipe==='Transfer')monthly[key].Transfer+=val;}
-      if(tipe==='Pemasukan'){totalIn+=val; catInc[kat]=(catInc[kat]||0)+val} else if(tipe==='Pengeluaran'){totalOut+=val; catExp[kat]=(catExp[kat]||0)+val}
-      last.push(r);
-    });
-    const saldo=totalIn-totalOut, kasAktual=n(map['Opname Kas Aktual']), piutang=n(map['Piutang Aktual']), kasPiutang=n(map['Kas + Piutang Aktual'])||kasAktual+piutang;
-    const sortedMonths=Object.keys(monthly).sort((a,b)=>new Date('1 '+a)-new Date('1 '+b));
-    const inArr=sortedMonths.map(m=>monthly[m].Pemasukan), outArr=sortedMonths.map(m=>monthly[m].Pengeluaran), netArr=sortedMonths.map(m=>monthly[m].Pemasukan-monthly[m].Pengeluaran);
-    document.getElementById('kasAktual').textContent=short(kasAktual); document.getElementById('piutang').textContent=short(piutang); document.getElementById('kasPiutang').textContent=short(kasPiutang); document.getElementById('totalTrans').textContent=trx.length-1; document.getElementById('totalIn').textContent=short(totalIn); document.getElementById('totalOut').textContent=short(totalOut); document.getElementById('saldo').textContent=short(saldo); document.getElementById('ratio').textContent=totalIn?(totalOut/totalIn*100).toFixed(1)+'%':'-';
-    let periode=map['Periode']||''; if(dates.length){const min=new Date(Math.min(...dates)), max=new Date(Math.max(...dates)); periode=min.toISOString().slice(0,10)+' s/d '+max.toISOString().slice(0,10)}
-    document.getElementById('subtitle').textContent='Periode '+periode+' · data LIVE dari Google Sheets · update '+new Date().toLocaleString('id-ID')
-    draw('monthly','bar',{labels:sortedMonths,datasets:[{label:'Pemasukan',data:inArr,backgroundColor:'rgba(46,204,113,.75)'},{label:'Pengeluaran',data:outArr,backgroundColor:'rgba(255,107,107,.75)'}]},{responsive:true,plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+rp(c.raw)}}},scales:{y:{ticks:{callback:v=>rp(v)}}}});
-    draw('accounts','doughnut',{labels:akun.map(a=>a.name),datasets:[{data:akun.map(a=>a.actual),backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc']}]},{plugins:{tooltip:{callbacks:{label:c=>c.label+': '+rp(c.raw)}}}});
-    const exp=Object.entries(catExp).sort((a,b)=>b[1]-a[1]).slice(0,10);
-    draw('expenseCat','bar',{labels:exp.map(x=>x[0]),datasets:[{label:'Pengeluaran',data:exp.map(x=>x[1]),backgroundColor:'rgba(255,107,107,.75)'}]},{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>rp(c.raw)}}},scales:{x:{ticks:{callback:v=>rp(v)}}}});
-    draw('netto','line',{labels:sortedMonths,datasets:[{label:'Netto',data:netArr,borderColor:'#ffd43b',backgroundColor:'rgba(255,212,59,.15)',fill:true,tension:.35}]},{plugins:{tooltip:{callbacks:{label:c=>'Netto: '+rp(c.raw)}}},scales:{y:{ticks:{callback:v=>rp(v)}}}});
-    document.getElementById('accountTable').innerHTML='<tr><th>Akun</th><th class="num">Saldo Aktual</th><th class="num">Selisih Opname</th></tr>'+akun.map(a=>`<tr><td>${esc(a.name)}</td><td class="num">${rp(a.actual)}</td><td class="num ${a.diff>=0?'good':'bad'}">${rp(a.diff)}</td></tr>`).join('');
-    document.getElementById('lastTable').innerHTML='<tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th></tr>'+last.slice(-12).reverse().map(r=>{const cls=r[3]==='Pemasukan'?'pemasukan':r[3]==='Pengeluaran'?'pengeluaran':'transfer';return `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td><span class="pill ${cls}">${esc(r[3])}</span></td><td class="num">${rp(n(r[4]))}</td></tr>`}).join('');
-  }catch(e){console.error(e); const el=document.getElementById('error'); el.style.display='block'; el.innerHTML='Gagal memuat data Google Sheets: '+esc(e.message)+'<br>Pastikan spreadsheet dibagikan sebagai viewer untuk anyone with link.'}
-}
-main();
-</script>
-</body>
-</html>
+const months=["Januari 2026", "Februari 2026", "Maret 2026", "April 2026", "Mei 2026", "Juni 2026"], pemasukan=[9276770.0, 1870000.0, 4038549.0, 2924557.0, 3530000.0, 2310000.0], pengeluaran=[859436.0, 333811.0, 3781293.0, 1224488.0, 1436121.0, 848111.0], transfer=[2649000.0, 2798000.0, 3200000.0, 4100000.0, 5250000.0, 1000000.0], netto=[8417334.0, 1536189.0, 257256.0, 1700069.0, 2093879.0, 1461889.0];
+function rp(v){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(v)}
+new Chart(document.getElementById('monthly'),{type:'bar',data:{labels:months,datasets:[{label:'Pemasukan',data:pemasukan,backgroundColor:'rgba(46,204,113,.75)'},{label:'Pengeluaran',data:pengeluaran,backgroundColor:'rgba(255,107,107,.75)'},{label:'Transfer',data:transfer,backgroundColor:'rgba(77,171,247,.55)'}]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+rp(c.raw)}}},scales:{y:{ticks:{callback:v=>rp(v)}}}}});
+new Chart(document.getElementById('accounts'),{type:'bar',data:{labels:["Tunai", "Bank BSI", "E-wallet DANA", "Piutang"],datasets:[{label:'Saldo',data:[1379500.0, 12877140.0, 997.0, 600000.0],backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc'],borderRadius:8}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>rp(c.raw)}}},scales:{x:{ticks:{callback:v=>rp(v)}}}}});
+new Chart(document.getElementById('expenseCat'),{type:'doughnut',data:{labels:["Keluarga", "Langganan Tools", "Transportasi", "Opname/Koreksi", "Elektronik", "Rumah", "Pulsa/Internet", "Tak Terhitung", "Pakaian", "Makanan & Minuman"],datasets:[{data:[1703000.0, 1608500.0, 1367989.0, 1209000.0, 987641.0, 473335.0, 465148.0, 301250.0, 296986.0, 212000.0],backgroundColor:['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#4dabf7','#b197fc','#f783ac','#63e6be','#91a7ff','#ced4da'],borderColor:'#111b2e',borderWidth:2}]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>c.label+': '+rp(c.raw)}}}}});
+new Chart(document.getElementById('netto'),{type:'line',data:{labels:months,datasets:[{label:'Netto',data:netto,borderColor:'#ffd43b',backgroundColor:'rgba(255,212,59,.15)',fill:true,tension:.35}]},options:{plugins:{tooltip:{callbacks:{label:c=>'Netto: '+rp(c.raw)}}},scales:{y:{ticks:{callback:v=>rp(v)}}}}});
+</script></body></html>
