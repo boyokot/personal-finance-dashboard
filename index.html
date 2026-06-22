@@ -32,7 +32,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 22 Jun 2026 16:36 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Periode 2026-01-04 s/d 2026-06-20 &middot; update 22 Jun 2026 18:32 WIB</div></div><button class="btn" onclick="location.reload(true)">&#x1F504; Refresh</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option><option value="2026-06" selected>Juni 2026</option><option value="2026-05">Mei 2026</option><option value="2026-04">April 2026</option><option value="2026-03">Maret 2026</option><option value="2026-02">Februari 2026</option><option value="2026-01">Januari 2026</option></select>
@@ -175,6 +175,14 @@ function applyFilter(){
   // Anggaran: hitung Terpakai dari transaksi aktual bulan terpilih, tier-aware
   var labels=getAnggaranLabels(), budgets=getAnggaranBudget();
   var anggaranUsed=labels.map(function(k){return anggaranUsage[k]||0});
+  var totalBudget=budgets.reduce(function(a,b){return a+b},0);
+  var totalUsed=anggaranUsed.reduce(function(a,b){return a+b},0);
+  var totalSisa=totalBudget-totalUsed;
+  var incomeNow=totPem; // pemasukan sudah exclude piutang/opname
+  var proyeksiSurplus=incomeNow-totalBudget;
+  var proyeksiCls=proyeksiSurplus>=0?'good':'bad';
+  var proyeksiEmoji=proyeksiSurplus>=0?'✅':'⚠️';
+  var proyeksiText=proyeksiSurplus>=0?'Surplus':'Defisit';
   var tbodyAng=document.getElementById('anggaranTableBody');
   tbodyAng.innerHTML='';
   labels.forEach(function(k,i){
@@ -184,6 +192,21 @@ function applyFilter(){
     else if(used>budget*0.8){stCls='yellow';stText='Hampir Habis'}
     tbodyAng.innerHTML+='<tr><td>'+k+'</td><td class="num">'+rp(budget)+'</td><td class="num">'+rp(used)+'</td><td class="num '+stCls+'">'+rp(sisa)+'</td><td class="'+stCls+'">'+stText+'</td></tr>';
   });
+  // Total row
+  var totalCls=totalSisa>=0?'good':'bad';
+  tbodyAng.innerHTML+='<tr style="font-weight:800;border-top:2px solid var(--blue)"><td>📊 <strong>TOTAL</strong></td><td class="num">'+rp(totalBudget)+'</td><td class="num">'+rp(totalUsed)+'</td><td class="num '+totalCls+'">'+rp(totalSisa)+'</td><td class="'+totalCls+'">'+Math.round(totalUsed/totalBudget*100)+'%</td></tr>';
+  // Surplus/Defisit projection
+  var sts=document.getElementById('anggaranStatus');
+  if(!sts){
+    var tbody=document.getElementById('anggaranTableBody').parentNode;
+    sts=document.createElement('div');
+    sts.id='anggaranStatus';
+    sts.style='margin-top:12px;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;text-align:center';
+    tbody.appendChild(sts);
+  }
+  sts.innerHTML='<span style="font-size:16px">'+proyeksiEmoji+'</span> Proyeksi Akhir Bulan: <strong style="color:var(--'+proyeksiCls+')">'+proyeksiText+' '+rp(Math.abs(proyeksiSurplus))+'</strong> &nbsp;|&nbsp; Pemasukan '+rp(incomeNow)+' vs Anggaran '+rp(totalBudget);
+  sts.style.background=proyeksiSurplus>=0?'rgba(46,204,113,.1)':'rgba(255,107,107,.1)';
+  sts.style.border='1px solid '+(proyeksiSurplus>=0?'var(--green)':'var(--red)');
   charts.anggaran.data.labels=labels;
   charts.anggaran.data.datasets[0].data=budgets;
   charts.anggaran.data.datasets[1].data=anggaranUsed;
