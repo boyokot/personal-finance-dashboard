@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:18px}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 24 Jun 2026 07:59 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 24 Jun 2026 08:09 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -97,7 +97,7 @@ const savingT2 = [
 function rp(v){ v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
 function shortRp(v){ v=Math.abs(v); if(v>=1e9)return'Rp'+(v/1e9).toFixed(1)+'M'; if(v>=1e6)return'Rp'+(v/1e6).toFixed(1)+'jt'; if(v>=1e3)return'Rp'+(v/1e3).toFixed(0)+'rb'; return'Rp'+Math.round(v); }
 function num(x){ if(x===null||x==='')return 0; if(typeof x==='number')return x; var s=String(x).replace(/Rp|\s|\./g,'').replace(',','').trim(); var n=parseFloat(s); return isNaN(n)?0:n; }
-function parseDate(s){ if(!s)return null; s=String(s).trim(); if(/^\d+$/.test(s)||/^\d+\.\d+$/.test(s)){ var d=new Date(1899,11,30); d.setDate(d.getDate()+parseInt(parseFloat(s))); return d; } var p=s.split(' '); if(p.length===3){ var m=bm[p[1]]; if(m)return new Date(parseInt(p[2]),m-1,parseInt(p[0])); } if(s.indexOf('-')>=0){ var d2=new Date(s+'T00:00:00'); if(!isNaN(d2.getTime()))return d2; } return null; }
+function parseDate(s){ if(!s)return null; s=String(s).trim(); if(/^\d+$/.test(s)||/^\d+\.\d+$/.test(s)){ var d=new Date(1899,11,30); d.setDate(d.getDate()+parseInt(parseFloat(s))); return d; } var p=s.split(' '); if(p.length===3){ var m=bm[p[1]]; if(m)return new Date(Date.UTC(parseInt(p[2]),m-1,parseInt(p[0]))); } var md=s.match(/^(\d(1, 2))\/(\d(1, 2))\/(\d4)$/); if(md)return new Date(Date.UTC(parseInt(md[3]),parseInt(md[2])-1,parseInt(md[1]))); if(s.indexOf('-')>=0){ var d2=new Date(s+'T00:00:00Z'); if(!isNaN(d2.getTime()))return d2; } return null; }
 function dateDisplay(s){ var d=parseDate(s); if(!d)return String(s); return d.getDate()+' '+bn[d.getMonth()+1].substr(0,3)+' '+d.getFullYear(); }
 function dateISO(s){ var d=parseDate(s); return d?d.toISOString().split('T')[0]:''; }
 
