@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:18px}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 03 Jul 2026 12:17 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 03 Jul 2026 13:01 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -61,9 +61,6 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 </div>
 <div class="section charts2">
   <div class="card"><h3>Saldo Aktual per Akun</h3><table><tr><th>Akun</th><th class="num">Saldo Aktual</th><th class="num">Selisih Opname</th></tr><tbody id="akunTableBody"></tbody></table></div>
-  <div class="card"><h3>Rincian Hutang</h3><table><tr><th>Tgl</th><th>Keterangan</th><th>Akun</th><th class="num">Nominal</th></tr><tbody id="hutangTableBody"></tbody></table><div id="hutangStatus" style="margin-top:12px;padding:12px 16px;border-radius:12px;font-size:14px;font-weight:700;text-align:center;background:rgba(255,212,59,.1);border:1px solid var(--yellow)"></div></div>
-</div>
-<div class="section charts2">
   <div class="card"><h3>Transaksi Terakhir</h3><table><tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th></tr><tbody id="trxTableBody"></tbody></table></div>
 </div>
 <div class="section"><h2 style="margin-bottom:12px">&#x1F4B0; Anggaran Bulanan <span id="tierLabel" style="font-size:16px;color:var(--green)">Tier 1</span></h2>
@@ -432,24 +429,20 @@ function applyFilter() {
     if(a.name!=='Piutang') totalKas+=a.actual; else piutangVal=a.actual;
   });
   // Summary rows
+  var hutangAll=getHutangRows(allTrx);
+  var hutangByAkun={};
+  hutangAll.forEach(function(t){ var k=t.akun||'Hutang'; hutangByAkun[k]=(hutangByAkun[k]||0)+hutangSigned(t); });
+  Object.keys(hutangByAkun).sort().forEach(function(k){
+    if(!hutangByAkun[k]) return;
+    tbodyAkun.innerHTML+='<tr style="color:var(--yellow)"><td>'+k+'</td><td class="num">-'+rp(hutangByAkun[k])+'</td><td></td></tr>';
+  });
+  var totalHutang=Object.values(hutangByAkun).reduce(function(a,b){return a+b},0);
   var totalAll=totalKas+piutangVal;
+  var netWorth=totalAll-totalHutang;
   tbodyAkun.innerHTML+='<tr style="font-weight:700;border-top:2px solid var(--blue)"><td>&#x1F4B5; Total Kas</td><td class="num">'+rp(totalKas)+'</td><td></td></tr>';
   tbodyAkun.innerHTML+='<tr style="color:var(--purple)"><td>&nbsp;&nbsp;&nbsp;&#x1F91D; Piutang</td><td class="num">'+rp(piutangVal)+'</td><td></td></tr>';
-  tbodyAkun.innerHTML+='<tr style="font-weight:800;border-top:2px solid var(--purple)"><td>&#x1F4B0; Kas + Piutang</td><td class="num">'+rp(totalAll)+'</td><td></td></tr>';
-
-  // Hutang table (liabilitas; tidak masuk pemasukan/pengeluaran)
-  var hutangRows=getHutangRows(filtered);
-  var hutangAll=getHutangRows(allTrx);
-  var totalHutang=hutangAll.reduce(function(a,t){return a+hutangSigned(t)},0);
-  var totalHutangFiltered=hutangRows.reduce(function(a,t){return a+hutangSigned(t)},0);
-  var tbodyHutang=document.getElementById('hutangTableBody');
-  tbodyHutang.innerHTML='';
-  hutangRows.slice().reverse().forEach(function(t){
-    var signed=hutangSigned(t), cls=signed>=0?'yellow':'good';
-    tbodyHutang.innerHTML+='<tr><td>'+t.tgl+'</td><td>'+t.ket+'</td><td>'+t.akun+'</td><td class="num '+cls+'">'+(signed<0?'-':'')+rp(Math.abs(signed))+'</td></tr>';
-  });
-  if(!hutangRows.length) tbodyHutang.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center">Belum ada hutang pada filter ini</td></tr>';
-  document.getElementById('hutangStatus').innerHTML='Total Hutang Aktif: <span style="color:var(--yellow)">'+rp(totalHutang)+'</span>'+(val==='all'?'':' &nbsp;|&nbsp; Filter ini: '+rp(totalHutangFiltered));
+  tbodyAkun.innerHTML+='<tr style="color:var(--yellow)"><td>&nbsp;&nbsp;&nbsp;&#x1F4B3; Hutang</td><td class="num">-'+rp(totalHutang)+'</td><td></td></tr>';
+  tbodyAkun.innerHTML+='<tr style="font-weight:800;border-top:2px solid var(--purple)"><td>&#x1F4B0; Kas + Piutang - Hutang</td><td class="num">'+rp(netWorth)+'</td><td></td></tr>';
 
   // Transaction table
   var tbody=document.getElementById('trxTableBody');
