@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:18px}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 03 Jul 2026 13:01 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 03 Jul 2026 14:57 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -268,8 +268,8 @@ function getAnggaranBudget(){ return currentTier===1?anggaranT1.map(function(a){
 function getSavingPlan(){ return currentTier===1?savingT1:savingT2; }
 function isHutang(t){ return t.tipe==='Hutang' || t.kat==='Hutang' || t.akun==='Spaylater'; }
 function isHutangPayment(t){ var s=(t.ket+' '+t.kat+' '+t.akun).toLowerCase(); return (s.indexOf('bayar')>=0 || s.indexOf('lunas')>=0 || s.indexOf('cicil')>=0) && (s.indexOf('hutang')>=0 || s.indexOf('spaylater')>=0 || s.indexOf('pinjaman')>=0); }
-function getHutangRows(rows){ return rows.filter(function(t){ return isHutang(t) || isHutangPayment(t); }); }
-function hutangSigned(t){ return isHutangPayment(t) && t.tipe==='Pengeluaran' ? -t.nom : t.nom; }
+function getHutangRows(rows){ return rows.filter(function(t){ return isHutang(t) || (t.tipe==='Pengeluaran' && isHutangPayment(t)); }); }
+function hutangSigned(t){ return t.tipe==='Pengeluaran' && isHutangPayment(t) ? -t.nom : t.nom; }
 
 function initCharts() {
   // Compute monthly stats from allTrx
