@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:18px}
 @media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 03 Jul 2026 14:57 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
+<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 10 Jul 2026 09:55 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -270,6 +270,14 @@ function isHutang(t){ return t.tipe==='Hutang' || t.kat==='Hutang' || t.akun==='
 function isHutangPayment(t){ var s=(t.ket+' '+t.kat+' '+t.akun).toLowerCase(); return (s.indexOf('bayar')>=0 || s.indexOf('lunas')>=0 || s.indexOf('cicil')>=0) && (s.indexOf('hutang')>=0 || s.indexOf('spaylater')>=0 || s.indexOf('pinjaman')>=0); }
 function getHutangRows(rows){ return rows.filter(function(t){ return isHutang(t) || (t.tipe==='Pengeluaran' && isHutangPayment(t)); }); }
 function hutangSigned(t){ return t.tipe==='Pengeluaran' && isHutangPayment(t) ? -t.nom : t.nom; }
+function hutangAkun(t){
+  var s=(t.ket+' '+t.kat+' '+t.akun).toLowerCase();
+  // Pembayaran hutang dicatat dari akun kas sumber (mis. E-wallet DANA),
+  // tapi untuk rincian hutang harus mengurangi krediturnya (Spaylater),
+  // bukan membuat baris hutang negatif atas akun kas.
+  if(s.indexOf('spaylater')>=0) return 'Spaylater';
+  return t.akun || 'Hutang';
+}
 
 function initCharts() {
   // Compute monthly stats from allTrx
@@ -431,7 +439,7 @@ function applyFilter() {
   // Summary rows
   var hutangAll=getHutangRows(allTrx);
   var hutangByAkun={};
-  hutangAll.forEach(function(t){ var k=t.akun||'Hutang'; hutangByAkun[k]=(hutangByAkun[k]||0)+hutangSigned(t); });
+  hutangAll.forEach(function(t){ var k=hutangAkun(t); hutangByAkun[k]=(hutangByAkun[k]||0)+hutangSigned(t); });
   Object.keys(hutangByAkun).sort().forEach(function(k){
     if(!hutangByAkun[k]) return;
     tbodyAkun.innerHTML+='<tr style="color:var(--yellow)"><td>'+k+'</td><td class="num">-'+rp(hutangByAkun[k])+'</td><td></td></tr>';
