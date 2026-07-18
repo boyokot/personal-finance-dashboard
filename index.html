@@ -31,19 +31,53 @@ table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:10px;bor
 .saving-bar{height:4px;border-radius:4px;margin-top:6px}
 .footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center}
 .loading{text-align:center;padding:60px;color:var(--muted);font-size:18px}
-@media(max-width:900px){.grid,.charts,.charts2{grid-template-columns:1fr} .header{display:block} h1{font-size:24px}}
+/* Millennial fintech refresh — mobile first */
+:root{--bg:#f5f7f2;--card:#ffffff;--card2:#eef4e9;--txt:#17211a;--muted:#66736a;--green:#16834b;--lime:#9fe870;--red:#d94f55;--blue:#2878d0;--yellow:#b77900;--purple:#7957c8;--line:#dfe6dc}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{min-width:320px;background:var(--bg);color:var(--txt);font-feature-settings:'tnum' 1,'calt' 1;line-height:1.45}
+.container{max-width:1240px;padding:16px 14px 40px}
+.header{position:sticky;top:0;z-index:20;align-items:center;margin:0 -14px 14px;padding:12px 14px;background:rgba(245,247,242,.94);border-bottom:1px solid rgba(23,33,26,.08);backdrop-filter:blur(12px)}
+h1{font-size:25px;line-height:1.05;letter-spacing:-.8px;font-weight:900} .sub{font-size:12px;margin-top:5px}
+.btn,.tier-btn,.filter-bar select{min-height:44px;border-radius:999px;font-weight:700;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.btn{background:var(--txt);border:0;color:white;padding:10px 16px} .btn:hover{background:#2b382f;transform:translateY(-1px)}
+.btn:active,.tier-btn:active{transform:scale(.97)}
+.btn:focus-visible,.tier-btn:focus-visible,.filter-bar select:focus-visible{outline:3px solid rgba(40,120,208,.28);outline-offset:2px}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:none}
+.filter-bar label{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);align-self:end}
+.filter-bar select{width:100%;grid-column:1/-1;background:#f5f7f2;border:1px solid var(--line);color:var(--txt);padding:9px 14px}
+.filter-bar>span[style*="border"],.filter-bar>span[style*="2502"]{display:none}
+.tier-btn{padding:10px 12px;font-size:12px;border:1px solid var(--line)}
+.tier-btn.active-t1{background:var(--lime);color:#163300} .tier-btn.active-t2{background:#ffd39b;color:#623800} .tier-btn.inactive{background:#f5f7f2;color:var(--muted);border-color:var(--line)} .tier-btn.inactive:hover{background:#e9eee6}
+#filterInfo{grid-column:1/-1;text-align:right}
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 1px 2px rgba(23,33,26,.03);overflow-x:auto}
+.grid .card:first-child{background:var(--txt);color:white;border-color:var(--txt)} .grid .card:first-child .klabel{color:#bdc8bf}
+.klabel{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700} .kvalue{font-size:clamp(20px,6vw,30px);line-height:1.1;letter-spacing:-.6px;overflow-wrap:anywhere}
+.good{color:var(--green)} .bad{color:var(--red)} .blue{color:var(--blue)} .yellow{color:var(--yellow)}
+.section{margin-top:12px} .charts,.charts2{grid-template-columns:1fr;gap:12px}
+h2{font-size:22px;line-height:1.1;letter-spacing:-.5px} h3{margin:0 0 14px;font-size:16px;letter-spacing:-.2px}
+canvas{max-height:300px}
+table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.pill{display:inline-flex;padding:5px 9px;font-weight:700} .pemasukan{background:#e1f5e8;color:#106b3c} .pengeluaran{background:#fde8e8;color:#aa3339} .transfer,.piutang{background:#e5f0fb;color:#1f62a5} .opname{background:#eee9fb;color:#6646ad} .hutang{background:#fff0cf;color:#855900}
+.saving-item{background:var(--card2);border:1px solid #e2eadf}
+.saving-bar{background:#dce6d8!important;height:6px}
+.footer{padding:18px 0}
+.loading{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:46px 16px}
+@media(min-width:700px){.container{padding:24px} .header{position:static;margin:0 0 20px;padding:0;background:transparent;border:0;backdrop-filter:none} h1{font-size:34px} .filter-bar{display:flex;align-items:center;padding:12px 16px} .filter-bar select{width:auto;grid-column:auto} #filterInfo{margin-left:auto} .grid{grid-template-columns:repeat(4,1fr);gap:14px} .charts2{grid-template-columns:1fr 1fr} .card{padding:20px;border-radius:26px} table{font-size:13px}}
+@media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Dashboard Keuangan Pribadi</h1><div class="sub">Live &middot; 12 Jul 2026 21:06 WIB &middot; <span id="refreshBadge" style="color:var(--green);cursor:pointer" onclick="loadAll()">&#x1F504; Refresh</span></div></div><button class="btn" id="btnRefresh" onclick="loadAll()">&#x1F504; Muat Data</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 18 Jul 2026 12:35 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
-  <select id="filterBulan" onchange="applyFilter()"><option value="all">Semua</option></select>
+  <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
   <span style="color:var(--muted);font-size:13px">&#x2502;</span>
   <label>&#x1F3AF; Tier:</label>
-  <button class="tier-btn active-t1" id="tierBtn1" onclick="switchTier(1)">Tier 1 (&ge;3jt) 65% save</button>
-  <button class="tier-btn inactive" id="tierBtn2" onclick="switchTier(2)">Tier 2 (&lt;3jt) 50% save</button>
+  <button class="tier-btn active-t1" id="tierBtn1" aria-label="Pilih anggaran tier 1" onclick="switchTier(1)">Tier 1 · Hemat 65%</button>
+  <button class="tier-btn inactive" id="tierBtn2" aria-label="Pilih anggaran tier 2" onclick="switchTier(2)">Tier 2 · Hemat 50%</button>
   <span id="filterInfo" style="color:var(--muted);font-size:13px"></span>
 </div>
-<div class="loading" id="loadingDiv">&#x1F504; Memuat data dari spreadsheet...</div>
+<div class="loading" id="loadingDiv" role="status" aria-live="polite">Menyiapkan ringkasan keuangan...</div>
 <div id="dashboardContent" style="display:none">
 <div class="grid" id="kpiCards">
   <div class="card"><div class="klabel">Total Transaksi</div><div class="kvalue" id="kpiTrxCount">-</div></div>
