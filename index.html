@@ -67,14 +67,14 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 09 Aug 2026 13:05 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 09 Aug 2026 16:11 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
   <span style="color:var(--muted);font-size:13px">&#x2502;</span>
   <label>&#x1F3AF; Tier:</label>
-  <button class="tier-btn active-t1" id="tierBtn1" aria-label="Pilih anggaran tier 1" onclick="switchTier(1)">Tier 1 · Hemat 65%</button>
-  <button class="tier-btn inactive" id="tierBtn2" aria-label="Pilih anggaran tier 2" onclick="switchTier(2)">Tier 2 · Hemat 50%</button>
+  <button class="tier-btn active-t1" id="tierBtn1" aria-label="Pilih anggaran utama" onclick="switchTier(1)">Plan Utama · Saving 55,6%</button>
+  <button class="tier-btn inactive" id="tierBtn2" aria-label="Pilih anggaran ketat" onclick="switchTier(2)">Plan Ketat</button>
   <span id="filterInfo" style="color:var(--muted);font-size:13px"></span>
 </div>
 <div class="loading" id="loadingDiv" role="status" aria-live="polite">Menyiapkan ringkasan keuangan...</div>
@@ -97,11 +97,18 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
   <div class="card"><h3>Saldo Aktual per Akun</h3><table><tr><th>Akun</th><th class="num">Saldo Aktual</th><th class="num">Selisih Opname</th></tr><tbody id="akunTableBody"></tbody></table></div>
   <div class="card"><h3>Transaksi Terakhir</h3><table><tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th></tr><tbody id="trxTableBody"></tbody></table></div>
 </div>
-<div class="section"><h2 style="margin-bottom:12px">&#x1F4B0; Anggaran Bulanan <span id="tierLabel" style="font-size:16px;color:var(--green)">Tier 1</span></h2>
+<div class="section"><h2 style="margin-bottom:12px">&#x1F9ED; Plan Keuangan Bukhori</h2>
+<div class="grid">
+  <div class="card"><div class="klabel">Baseline Pemasukan</div><div class="kvalue good">Rp3,1jt</div><div class="sub">Konservatif per bulan</div></div>
+  <div class="card"><div class="klabel">Saving + Investasi</div><div class="kvalue blue">Rp1,725jt</div><div class="sub">Target 55,6% per bulan</div></div>
+  <div class="card"><div class="klabel">Kewajiban Terdekat</div><div class="kvalue bad">Rp530rb</div><div class="sub">Utang Rp450rb (11 Agu) + cicilan Rp80rb</div></div>
+  <div class="card"><div class="klabel">Dana Lebaran</div><div class="kvalue yellow">Rp125rb</div><div class="sub">Setoran bulanan, target Rp1,5jt</div></div>
+</div></div>
+<div class="section"><h2 style="margin-bottom:12px">&#x1F4B0; Anggaran Bulanan <span id="tierLabel" style="font-size:16px;color:var(--green)">Plan Utama</span></h2>
 <div class="charts2"><div class="card"><h3>Anggaran vs Terpakai</h3><table><tr><th>Kategori</th><th class="num">Anggaran</th><th class="num">Terpakai</th><th class="num">Sisa</th><th>Status</th></tr><tbody id="anggaranTableBody"></tbody></table><div id="anggaranStatus"></div></div>
 <div class="card"><h3>Grafik Anggaran</h3><canvas id="chartAnggaran"></canvas></div></div></div>
-<div class="section"><h2 style="margin-bottom:12px">&#x1F3E0; Rencana Saving &amp; Investasi <span id="savingTierLabel" style="font-size:16px;color:var(--green)">Tier 1</span></h2>
-<div class="card"><div id="savingPlanBody"></div></div></div>
+<div class="section"><h2 style="margin-bottom:12px">&#x1F3E0; Rencana Saving &amp; Investasi <span id="savingTierLabel" style="font-size:16px;color:var(--green)">Plan Utama</span></h2>
+<div class="card"><div id="savingPlanBody"></div><div class="sub" style="margin-top:10px">Pembagian bulanan Plan Utama: kebutuhan + keluarga maksimal Rp1,2jt · saving/investasi Rp1,725jt · buffer Rp175rb.</div></div></div>
 <div class="section"><h2 style="margin-bottom:12px">&#x1F3AF; Target Tabungan</h2><div class="charts2"><div class="card"><h3>Progress Tabungan</h3><table><tr><th>Target</th><th class="num">Goal</th><th class="num">Terkumpul</th><th class="num">Sisa</th><th>Progress</th><th>Deadline</th><th>Status</th></tr><tbody id="tabungTableBody"></tbody></table></div>
 <div class="card"><h3>Komposisi Target</h3><canvas id="chartTabungan"></canvas></div></div></div>
 </div>
@@ -116,16 +123,14 @@ const bm = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'Mei':5,'May':5,'Jun':6,'Jul':7,'Agu
 const bn = {1:'Januari',2:'Februari',3:'Maret',4:'April',5:'Mei',6:'Juni',7:'Juli',8:'Agustus',9:'September',10:'Oktober',11:'November',12:'Desember'};
 
 const savingT1 = [
-  {label:'Emergency Fund (DANA)',amount:350000,color:'#4dabf7',note:'Target 3x pengeluaran, likuid'},
-  {label:'Deposito BSI',amount:600000,color:'#2ecc71',note:'Kunci 3-6 bulan, rotate terus'},
-  {label:'RDPU Syariah (Bibit)',amount:500000,color:'#ffd43b',note:'Liquid, bisa diambil kapan saja'},
-  {label:'Sukuk/RDPT Syariah',amount:500000,color:'#b197fc',note:'Saat Sukuk Tabungan buka'},
+  {label:'Persiapan Menikah',amount:1000000,color:'#4dabf7',note:'Dana fleksibel untuk horizon 1–2 tahun'},
+  {label:'Investasi Syariah',amount:600000,color:'#2ecc71',note:'RDPU syariah, deposito BSI, atau Sukuk'},
+  {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Target tahunan Rp1,5 juta'},
 ];
 const savingT2 = [
-  {label:'Emergency Fund (DANA)',amount:250000,color:'#4dabf7',note:'Target 3x pengeluaran, likuid'},
-  {label:'Deposito BSI',amount:450000,color:'#2ecc71',note:'Prioritas utama'},
-  {label:'RDPU Syariah (Bibit)',amount:350000,color:'#ffd43b',note:'Bibit/Bareksa syariah'},
-  {label:'Sukuk/RDPT Syariah',amount:300000,color:'#b197fc',note:'Atau RDPU'},
+  {label:'Persiapan Menikah',amount:600000,color:'#4dabf7',note:'Tetap menabung saat pemasukan melemah'},
+  {label:'Investasi Syariah',amount:300000,color:'#2ecc71',note:'Prioritaskan instrumen likuid dan aman'},
+  {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Kewajiban tahunan tetap berjalan'},
 ];
 
 function rp(v){ v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
@@ -346,7 +351,7 @@ function initCharts() {
 function renderSavingPlan() {
   var plan=getSavingPlan();
   var total=plan.reduce(function(a,s){return a+s.amount},0);
-  var income=currentTier===1?3000000:2700000;
+  var income=currentTier===1?3100000:2700000;
   var pct=Math.round(total/income*100);
   var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
   html+='<div class="saving-item"><div><div style="font-size:13px;color:var(--muted)">Total Saving/Bulan</div><div style="font-size:22px;font-weight:800;color:var(--green)">'+rp(total)+'</div></div></div>';
@@ -379,12 +384,12 @@ function switchTier(t) {
   var tl=document.getElementById('tierLabel'),sl=document.getElementById('savingTierLabel');
   if(t===1){
     b1.className='tier-btn active-t1'; b2.className='tier-btn inactive';
-    tl.textContent='Tier 1'; tl.style.color='var(--green)';
-    sl.textContent='Tier 1'; sl.style.color='var(--green)';
+    tl.textContent='Plan Utama'; tl.style.color='var(--green)';
+    sl.textContent='Plan Utama'; sl.style.color='var(--green)';
   }else{
     b1.className='tier-btn inactive'; b2.className='tier-btn active-t2';
-    tl.textContent='Tier 2'; tl.style.color='#f59e0b';
-    sl.textContent='Tier 2'; sl.style.color='#f59e0b';
+    tl.textContent='Plan Ketat'; tl.style.color='#f59e0b';
+    sl.textContent='Plan Ketat'; sl.style.color='#f59e0b';
   }
   renderSavingPlan();
   applyFilter();
