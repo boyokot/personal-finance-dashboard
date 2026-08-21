@@ -67,7 +67,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 21 Aug 2026 20:09 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 21 Aug 2026 20:20 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -250,6 +250,22 @@ function parseOpname(rows) {
       }
       else if (t.tipe === 'Pengeluaran') {
         if (isSource) a.actual -= t.nom;
+        // Bayar hutang: kurangi saldo kreditor (Spaylater/Kartu Kredit) saat pembayaran
+        var lket = ket;
+        if ((lket.indexOf('bayar')>=0 || lket.indexOf('lunas')>=0) && (lket.indexOf('spaylater')>=0 || lket.indexOf('kartu kredit')>=0 || lket.indexOf('jenius')>=0)) {
+          if (a.name === 'Spaylater' || a.name === 'Kartu Kredit') a.actual -= t.nom;
+        }
+      }
+      else if (t.tipe === 'Hutang') {
+        // Hutang: uang masuk dari kreditor (Spaylater) → naikkan saldo kreditor
+        var lket = ket;
+        var isRepay = (lket.indexOf('bayar')>=0 || lket.indexOf('lunas')>=0 || lket.indexOf('cicil')>=0);
+        if (a.name === 'Spaylater' || a.name === 'Kartu Kredit') {
+          if (isRepay) a.actual -= t.nom; else a.actual += t.nom;
+        }
+        // Kas sumber juga berubah (uang masuk/keluar dari BSI/Tunai)
+        if (isSource && !isRepay) a.actual += t.nom;
+        if (isSource && isRepay) a.actual -= t.nom;
       }
       else if (t.tipe === 'Piutang') {
         // Piutang memengaruhi 2 sisi:
