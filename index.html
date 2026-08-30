@@ -67,7 +67,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 30 Aug 2026 13:12 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 30 Aug 2026 14:39 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -515,7 +515,7 @@ function applyFilter() {
   // Transaction table
   var tbody=document.getElementById('trxTableBody');
   tbody.innerHTML='';
-  filtered.slice(-10).reverse().forEach(function(t){
+  filtered.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; }).slice(0,10).forEach(function(t){
     var cls='pengeluaran';
     if(t.tipe==='Pemasukan')cls='pemasukan';
     else if(t.tipe==='Transfer')cls='transfer';
