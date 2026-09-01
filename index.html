@@ -67,7 +67,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 01 Sep 2026 20:19 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 01 Sep 2026 20:43 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -242,6 +242,7 @@ function parseOpname(rows) {
         else if (a.name.toLowerCase().indexOf('bsi')>=0 && (ketNorm.indexOf('ke bsi')>=0||ketNorm.indexOf('ke bank')>=0)) isDest=true;
         else if (a.name.toLowerCase().indexOf('dana')>=0 && (ketNorm.indexOf('ke dana')>=0||ketNorm.indexOf('ke e-wallet dana')>=0)) isDest=true;
         else if (a.name.toLowerCase().indexOf('shopee')>=0 && (ketNorm.indexOf('ke shopee')>=0||ketNorm.indexOf('topup shopee')>=0)) isDest=true;
+        else if (a.name.toLowerCase().indexOf('seabank')>=0 && ketNorm.indexOf('ke seabank')>=0) isDest=true;
         if (isSource) a.actual -= t.nom;
         if (isDest) a.actual += t.nom;
       }
@@ -356,7 +357,7 @@ function initCharts() {
 
   charts.monthly=new Chart(document.getElementById('monthly'),{type:'bar',data:{labels:mLabels,datasets:[{label:'Pemasukan',data:mPem,backgroundColor:'rgba(46,204,113,.75)'},{label:'Pengeluaran',data:mPeng,backgroundColor:'rgba(255,107,107,.75)'}]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+rp(c.raw)}}}},scales:{y:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
-  charts.accounts=new Chart(document.getElementById('accounts'),{type:'bar',data:{labels:opnameData.map(function(a){return a.name}),datasets:[{label:'Saldo',data:opnameData.map(function(a){return a.actual}),backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc'],borderRadius:8}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return rp(c.raw)}}}},scales:{x:{ticks:{callback:function(v){return shortRp(v)}}}}}});
+  charts.accounts=new Chart(document.getElementById('accounts'),{type:'bar',data:{labels:opnameData.map(function(a){return a.name}),datasets:[{label:'Saldo',data:opnameData.map(function(a){return a.actual}),backgroundColor:['#2ecc71','#4dabf7','#ffd43b','#b197fc','#ff8787'],borderRadius:8}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return rp(c.raw)}}}},scales:{x:{ticks:{callback:function(v){return shortRp(v)}}}}}});
 
   charts.expenseCat=new Chart(document.getElementById('expenseCat'),{type:'doughnut',data:{labels:[],datasets:[{data:[],backgroundColor:['#ff6b6b','#ffa94d','#ffd43b','#69db7c','#4dabf7','#b197fc','#f783ac','#63e6be','#91a7ff','#ced4da'],borderColor:'#111b2e',borderWidth:2}]},options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return c.label+': '+rp(c.raw)}}}}}});
 
