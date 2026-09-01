@@ -67,7 +67,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 01 Sep 2026 20:43 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 01 Sep 2026 20:45 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -124,12 +124,12 @@ const bn = {1:'Januari',2:'Februari',3:'Maret',4:'April',5:'Mei',6:'Juni',7:'Jul
 
 const savingT1 = [
   {label:'Persiapan Menikah',amount:1000000,color:'#4dabf7',note:'Dana fleksibel untuk horizon 1–2 tahun'},
-  {label:'Investasi Syariah',amount:600000,color:'#2ecc71',note:'RDPU syariah, deposito BSI, atau Sukuk'},
+  {label:'Tabungan Gadai Sawah',amount:500000,color:'#ff8787',note:'Target Rp30 juta, setor Rp500rb/bulan'},
   {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Target tahunan Rp1,5 juta'},
 ];
 const savingT2 = [
   {label:'Persiapan Menikah',amount:600000,color:'#4dabf7',note:'Tetap menabung saat pemasukan melemah'},
-  {label:'Investasi Syariah',amount:300000,color:'#2ecc71',note:'Prioritaskan instrumen likuid dan aman'},
+  {label:'Tabungan Gadai Sawah',amount:300000,color:'#ff8787',note:'Prioritaskan instrumen likuid dan aman'},
   {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Kewajiban tahunan tetap berjalan'},
 ];
 
@@ -302,6 +302,11 @@ function parseTabungan(rows) {
     var nama=r[0], goal=num(r[1]), terkumpul=num(r[2]), sisa=num(r[3]);
     var progress=parseFloat(String(r[4]).replace('%',''))||0;
     var deadline=r[5], status=r[6];
+    // Convert serial number deadline to formatted date
+    if(deadline && /^\d+$/.test(String(deadline))) {
+      var dd=parseDate(deadline);
+      if(dd) deadline=dd.getDate()+' '+bn[dd.getMonth()+1].substring(0,3)+' '+dd.getFullYear();
+    }
     tabungData.push({nama:nama, goal:goal, terkumpul:terkumpul, sisa:sisa, progress:progress, deadline:deadline, status:status});
   }
 }
