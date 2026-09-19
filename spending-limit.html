@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Batas Spending Mingguan · Keuangan Bukhori</title>
+<style>
+:root{--bg:#f5f7f2;--card:#fff;--ink:#17211a;--muted:#66736a;--line:#dfe6dc;--green:#16834b;--lime:#9fe870;--red:#d94f55;--amber:#b77900;--blue:#2878d0;--soft:#eef4e9}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top left,#e7f8d9 0,#f5f7f2 36%,#f7f3ea 100%);color:var(--ink);font-family:ui-sans-serif,Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.45}.wrap{max-width:1180px;margin:auto;padding:22px 14px 48px}.top{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;margin-bottom:18px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--green);font-weight:900}.title{font-size:clamp(30px,7vw,64px);line-height:.96;letter-spacing:-2px;margin:6px 0 10px;font-weight:950}.sub{color:var(--muted);max-width:720px}.btn{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;text-decoration:none;border-radius:999px;padding:12px 18px;font-weight:800;white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.card{background:rgba(255,255,255,.86);border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:0 10px 28px rgba(23,33,26,.06);backdrop-filter:blur(10px)}.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:800}.metric{font-size:clamp(24px,5vw,38px);font-weight:950;letter-spacing:-1px;margin-top:8px}.good{color:var(--green)}.bad{color:var(--red)}.warn{color:var(--amber)}.blue{color:var(--blue)}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}.callout{background:#17211a;color:#fff;border-color:#17211a;overflow:hidden;position:relative}.callout:after{content:"";position:absolute;right:-80px;top:-80px;width:220px;height:220px;border-radius:50%;background:var(--lime);opacity:.26}.callout .metric-label,.callout .sub{color:#c7d4c9}.big-number{font-size:clamp(42px,8vw,82px);line-height:.9;font-weight:950;letter-spacing:-3px;margin:18px 0}.table-card{padding:0;overflow:hidden}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:14px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;background:#f7faf5}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.pill{display:inline-flex;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900}.safe{background:#e1f5e8;color:#106b3c}.tight{background:#fff0cf;color:#855900}.stop{background:#fde8e8;color:#aa3339}.bar{height:8px;border-radius:99px;background:#e8eee5;overflow:hidden;margin-top:8px}.fill{height:100%;border-radius:99px;background:var(--green)}.fill.warn{background:#df9c22}.fill.bad{background:var(--red)}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}.rule strong{display:block;margin-bottom:6px}.footer{margin-top:20px;color:var(--muted);font-size:12px;text-align:center}@media(max-width:820px){.top,.hero{display:block}.btn{margin-top:14px}.grid,.rules{grid-template-columns:1fr 1fr}.table-card{overflow-x:auto}table{min-width:760px}}@media(max-width:520px){.grid,.rules{grid-template-columns:1fr}.wrap{padding-top:16px}.card{border-radius:22px;padding:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Keuangan Bukhori</div>
+      <h1 class="title">Batas Spending Mingguan</h1>
+      <div class="sub" id="subtitle">Mengambil data dashboard live...</div>
+    </div>
+    <a class="btn" href="./index.html">← Dashboard utama</a>
+  </div>
+
+  <div class="hero">
+    <div class="card callout">
+      <div class="metric-label">Batas aman minggu ini</div>
+      <div class="big-number" id="weeklyTotal">-</div>
+      <div class="sub" id="weeklyNote">Batas dihitung prorata dari sisa anggaran bulan ini.</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Prioritas kontrol</div>
+      <h2 id="priorityTitle" style="margin:10px 0 8px;font-size:28px;letter-spacing:-.8px">-</h2>
+      <div class="sub" id="priorityText">-</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="metric-label">Sisa anggaran bulan</div><div class="metric good" id="monthRemaining">-</div></div>
+    <div class="card"><div class="metric-label">Terpakai bulan ini</div><div class="metric warn" id="monthUsed">-</div></div>
+    <div class="card"><div class="metric-label">Kategori ketat</div><div class="metric bad" id="tightCount">-</div></div>
+    <div class="card"><div class="metric-label">Hari tersisa bulan</div><div class="metric blue" id="daysLeft">-</div></div>
+  </div>
+
+  <div class="card table-card">
+    <table>
+      <thead><tr><th>Kategori</th><th class="num">Anggaran</th><th class="num">Terpakai</th><th class="num">Sisa Bulan</th><th class="num">Batas Minggu Ini</th><th>Status</th><th>Arahan</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="7">Memuat...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="rules">
+    <div class="card rule"><strong>1. Cash harian</strong><span class="sub">Pakai angka batas minggu ini sebagai plafon. Kalau kategori ketat, tunda belanja non-wajib.</span></div>
+    <div class="card rule"><strong>2. Rumah hampir habis</strong><span class="sub">Hanya beli sabun/kebutuhan pokok kecil. Hindari perbaikan atau barang rumah tambahan.</span></div>
+    <div class="card rule"><strong>3. Transfer bukan spending</strong><span class="sub">Transfer antar akun tidak dihitung pengeluaran, tapi tetap jaga saldo Tunai minimum.</span></div>
+  </div>
+
+  <div class="footer" id="footer">Live dari Google Sheets · halaman otomatis hitung saat dibuka</div>
+</div>
+<script>
+const PUBKEY='2PACX-1vTyARHOgpAo3jDKfLXKhbU36kvJPXCR19TWS5IdVB0T-BWSH4U5g_-LqgMog7xn7YTm87lpXQyMAuNC';
+const GIDS={transaksi:'158794767',anggaran:'66736449'};
+const categories=['Makanan & Minuman','Transportasi','Rumah','Pulsa/Internet','Kesehatan','Hiburan','Langganan Tools','Adm Bank','Keluarga','Sedekah','Kecantikan','Lainnya'];
+function rp(v){return 'Rp '+new Intl.NumberFormat('id-ID').format(Math.round(Number(v)||0));}
+function num(x){if(x==null||x==='')return 0;if(typeof x==='number')return x;return Number(String(x).replace(/Rp|\s|\./g,'').replace(',','.'))||0;}
+function parseCSV(text){let rows=[],row=[],cur='',q=false;for(let i=0;i<text.length;i++){let ch=text[i],nx=text[i+1];if(ch==='"'){if(q&&nx==='"'){cur+='"';i++;}else q=!q;}else if(ch===','&&!q){row.push(cur.trim());cur='';}else if((ch==='\n'||ch==='\r')&&!q){if(ch==='\r'&&nx==='\n')i++;row.push(cur.trim());rows.push(row);row=[];cur='';}else cur+=ch;}if(cur.length||row.length){row.push(cur.trim());rows.push(row);}return rows.filter(r=>r.join('').trim());}
+async function fetchCSV(gid){let u='https://docs.google.com/spreadsheets/d/e/'+PUBKEY+'/pub?gid='+gid+'&single=true&output=csv&_ts='+Date.now();let r=await fetch(u,{cache:'no-store'});return parseCSV(await r.text());}
+function parseDate(s){if(!s)return null;s=String(s).trim();if(/^\d+(\.\d+)?$/.test(s)){let d=new Date(1899,11,30);d.setDate(d.getDate()+parseInt(parseFloat(s)));return d;}let bm={Jan:0,Feb:1,Mar:2,Apr:3,Mei:4,May:4,Jun:5,Jul:6,Agu:7,Aug:7,Sep:8,Okt:9,Oct:9,Nov:10,Des:11,Dec:11};let p=s.split(' ');if(p.length===3&&bm[p[1]]!=null)return new Date(Number(p[2]),bm[p[1]],Number(p[0]));return null;}
+function monthName(d){return d.toLocaleDateString('id-ID',{month:'long',year:'numeric'});}
+function statusFor(rem,budget,used,weekly){let pct=budget?used/budget:0;if(rem<=0)return ['STOP','stop','Stop, sudah lewat anggaran.'];if(pct>=.85||weekly<10000)return ['Ketat','tight','Belanja hanya kebutuhan wajib.'];return ['Aman','safe','Boleh, tetap catat dan jangan habiskan sekaligus.'];}
+async function main(){
+  const [trxRows,angRows]=await Promise.all([fetchCSV(GIDS.transaksi),fetchCSV(GIDS.anggaran)]);
+  const trx=trxRows.slice(1).map(r=>({date:parseDate(r[0]),cat:r[2],type:r[3],nom:num(r[4])})).filter(t=>t.date);
+  const latest=trx.reduce((a,t)=>!a||t.date>a?t.date:a,null)||new Date();
+  const y=latest.getFullYear(), m=latest.getMonth();
+  const today=new Date(y,m,Math.min(new Date().getDate(),new Date(y,m+1,0).getDate()));
+  const calcDate=(new Date().getFullYear()===y&&new Date().getMonth()===m)?today:latest;
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const remainingDays=Math.max(1,daysInMonth-calcDate.getDate()+1);
+  const ang={};
+  angRows.slice(1).forEach(r=>{if(categories.includes(r[0]))ang[r[0]]=num(r[1]);});
+  const used={};categories.forEach(c=>used[c]=0);
+  trx.forEach(t=>{if(t.date.getFullYear()===y&&t.date.getMonth()===m&&t.type==='Pengeluaran'&&used[t.cat]!=null)used[t.cat]+=t.nom;});
+  const rows=categories.map(cat=>{let budget=ang[cat]||0,u=used[cat]||0,rem=Math.max(0,budget-u);let weekly=Math.min(rem,rem/remainingDays*7);let st=statusFor(rem,budget,u,weekly);return {cat,budget,u,rem,weekly,st,pct:budget?u/budget:0};});
+  const totalWeekly=rows.reduce((s,r)=>s+r.weekly,0), totalRem=rows.reduce((s,r)=>s+r.rem,0), totalUsed=rows.reduce((s,r)=>s+r.u,0), tight=rows.filter(r=>r.st[1]!=='safe').length;
+  document.getElementById('subtitle').textContent='Rencana batas belanja untuk '+monthName(latest)+' · dihitung dari data terbaru '+latest.toLocaleDateString('id-ID')+'.';
+  document.getElementById('weeklyTotal').textContent=rp(totalWeekly);
+  document.getElementById('monthRemaining').textContent=rp(totalRem);
+  document.getElementById('monthUsed').textContent=rp(totalUsed);
+  document.getElementById('tightCount').textContent=tight;
+  document.getElementById('daysLeft').textContent=remainingDays+' hari';
+  let priority=rows.slice().sort((a,b)=>(b.pct-a.pct)||(a.rem-b.rem))[0];
+  document.getElementById('priorityTitle').textContent=priority.cat;
+  document.getElementById('priorityText').textContent='Terpakai '+Math.round(priority.pct*100)+'% dari anggaran. '+priority.st[2];
+  document.getElementById('rows').innerHTML=rows.map(r=>`<tr><td><strong>${r.cat}</strong><div class="bar"><div class="fill ${r.pct>=.85?'bad':r.pct>=.7?'warn':''}" style="width:${Math.min(100,r.pct*100)}%"></div></div></td><td class="num">${rp(r.budget)}</td><td class="num">${rp(r.u)}</td><td class="num">${rp(r.rem)}</td><td class="num"><strong>${rp(r.weekly)}</strong></td><td><span class="pill ${r.st[1]}">${r.st[0]}</span></td><td>${r.st[2]}</td></tr>`).join('');
+  document.getElementById('footer').textContent='Live dari Google Sheets · diperbarui '+new Date().toLocaleString('id-ID');
+}
+main().catch(e=>{document.getElementById('rows').innerHTML='<tr><td colspan="7">Gagal memuat: '+e.message+'</td></tr>';console.error(e);});
+</script>
+</body>
+</html>
