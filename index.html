@@ -67,7 +67,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @media(min-width:980px){.charts{grid-template-columns:2fr 1fr} canvas{max-height:350px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 19 Oct 2026 22:22 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 19 Oct 2026 22:44 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -102,7 +102,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
   <div class="card"><div class="klabel">Baseline Pemasukan</div><div class="kvalue good">Rp3,1jt</div><div class="sub">Konservatif per bulan</div></div>
   <div class="card"><div class="klabel">Saving + Investasi</div><div class="kvalue blue">Rp1,725jt</div><div class="sub">Target 55,6% per bulan</div></div>
   <div class="card"><div class="klabel">Kewajiban Terdekat</div><div class="kvalue bad">Rp530rb</div><div class="sub">Utang Rp450rb (11 Agu) + cicilan Rp80rb</div></div>
-  <div class="card"><div class="klabel">Dana Lebaran</div><div class="kvalue yellow">Rp125rb</div><div class="sub">Setoran bulanan, target Rp1,5jt</div></div>
+  <div class="card"><div class="klabel">Dana Lebaran</div><div class="kvalue yellow" id="cardLebaran">Rp125rb</div><div class="sub" id="cardLebaranSub">Setoran bulanan, target Rp1,5jt</div></div>
 </div></div>
 <div class="section"><h2 style="margin-bottom:12px">&#x1F4B0; Anggaran Bulanan <span id="tierLabel" style="font-size:16px;color:var(--green)">Plan Utama</span></h2>
 <div class="charts2"><div class="card"><h3>Anggaran vs Terpakai</h3><table><tr><th>Kategori</th><th class="num">Anggaran</th><th class="num">Terpakai</th><th class="num">Sisa</th><th>Status</th></tr><tbody id="anggaranTableBody"></tbody></table><div id="anggaranStatus"></div></div>
@@ -393,6 +393,13 @@ function renderTabungan() {
     var bw=Math.min(t.progress,100);
     tbody.innerHTML+='<tr><td>'+t.nama+'</td><td class="num">'+rp(t.goal)+'</td><td class="num">'+rp(t.terkumpul)+'</td><td class="num">'+rp(t.sisa)+'</td><td><div style="background:#1e3050;border-radius:8px;height:18px;position:relative"><div style="background:'+bc+';border-radius:8px;height:18px;width:'+bw+'%"></div><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700">'+Math.round(t.progress)+'%</span></div></td><td>'+t.deadline+'</td><td>'+t.status+'</td></tr>';
   });
+  // Card "Dana Lebaran" — ambil dari data tabungan live (jangan hardcode)
+  var lb=tabungData.filter(function(t){return /lebaran/i.test(t.nama)})[0];
+  var elC=document.getElementById('cardLebaran'), elS=document.getElementById('cardLebaranSub');
+  if(lb && elC){
+    elC.textContent=rp(lb.terkumpul);
+    if(elS) elS.textContent='dari target '+rp(lb.goal)+' ('+Math.round(lb.progress)+'%)';
+  }
   // Tabungan donut chart
   var tLabels=tabungData.map(function(t){return t.nama});
   var tValues=tabungData.map(function(t){return t.terkumpul});
