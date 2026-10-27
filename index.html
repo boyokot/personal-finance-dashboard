@@ -85,7 +85,7 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 .btnSave{background:linear-gradient(135deg,#2ecc71,#1f9d55);color:#fff}
 #formMsg{margin-top:10px;font-size:13px;min-height:18px}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 05:01 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 05:03 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -583,7 +583,7 @@ function applyFilter() {
 }
 
 
-var FIN_ENDPOINT = '__FIN_ENDPOINT__';
+var FIN_ENDPOINT = 'https://proceedings-zope-shown-extraordinary.trycloudflare.com';
 var FIN_ENDPOINT_FILE = 'endpoint.txt';
 function finLoadEndpoint(cb){
   cb = cb || function(){};
