@@ -85,9 +85,19 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 .btnSave{background:linear-gradient(135deg,#2ecc71,#1f9d55);color:#fff}
 .btnDanger{width:100%;margin-top:10px;padding:12px;border-radius:14px;border:1px solid #7a2b2b;background:#3a1a1a;color:#ff8b8b;font-weight:700;font-size:14px;cursor:pointer}
 .editBtn{background:none;border:0;color:var(--blue);font-size:15px;cursor:pointer;padding:2px 4px}
+.typeGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 6px}
+.typeCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px 8px;border-radius:16px;border:1px solid var(--line);background:var(--card2);color:var(--txt);cursor:pointer;font:inherit}
+.typeCard:active{transform:scale(.97)}
+.typeCard .ico{font-size:27px;line-height:1}
+.typeCard .lbl{font-weight:700;font-size:14px}
+.typeCard .sub{font-size:11px;color:var(--muted);text-align:center;line-height:1.25}
+.typeCard.wide{grid-column:1/-1}
+.stepHead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.stepHead button{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;line-height:1}
+.stepHead h3{margin:0}
 #formMsg{margin-top:10px;font-size:13px;min-height:18px}
 </style></head><body><div class="container">
-<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 07:35 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
+<div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 11:58 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
   <label>&#x1F4C5; Filter Bulan:</label>
   <select id="filterBulan" aria-label="Pilih bulan transaksi" onchange="applyFilter()"><option value="all">Semua</option></select>
@@ -101,28 +111,68 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 <button class="fab" id="fabAdd" aria-label="Tambah transaksi" onclick="openAdd()">+</button>
 <div class="modal" id="addModal" onclick="if(event.target===this)closeAdd()">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="addTitle">
-    <h3 id="addTitle">Tambah Transaksi</h3>
-    <p class="hint" id="addHint">Isi data, lalu masukkan PIN untuk menyimpan.</p>
-    <label class="fld"><span>Tanggal</span><input type="date" id="fTanggal"></label>
-    <label class="fld"><span>Keterangan</span><input type="text" id="fKet" placeholder="misal: beli sabun mandi"></label>
-    <div class="row2">
-      <label class="fld"><span>Tipe</span><select id="fTipe"></select></label>
-      <label class="fld"><span>Nominal (Rp)</span><input type="number" id="fNom" inputmode="numeric" min="1" placeholder="4000"></label>
+
+    <div id="stepPilih">
+      <h3 id="addTitle">Mau catat apa?</h3>
+      <p class="hint" id="addHint">Pilih jenis transaksi dulu.</p>
+      <div class="typeGrid">
+        <button class="typeCard" onclick="openAddTipe('Pemasukan')">
+          <span class="ico">&#128176;</span>
+          <span class="lbl">Pemasukan</span>
+          <span class="sub">uang masuk</span>
+        </button>
+        <button class="typeCard" onclick="openAddTipe('Pengeluaran')">
+          <span class="ico">&#128722;</span>
+          <span class="lbl">Pengeluaran</span>
+          <span class="sub">uang keluar</span>
+        </button>
+        <button class="typeCard" onclick="openAddTipe('Transfer')">
+          <span class="ico">&#128260;</span>
+          <span class="lbl">Transfer</span>
+          <span class="sub">pindah akun</span>
+        </button>
+        <button class="typeCard" onclick="openAddTipe('Hutang')">
+          <span class="ico">&#128179;</span>
+          <span class="lbl">Hutang</span>
+          <span class="sub">kita pinjam</span>
+        </button>
+        <button class="typeCard wide" onclick="openAddTipe('Piutang')">
+          <span class="ico">&#129309;</span>
+          <span class="lbl">Piutang</span>
+          <span class="sub">kita pinjamkan</span>
+        </button>
+      </div>
+      <div class="actions">
+        <button class="btnCancel" onclick="closeAdd()">Batal</button>
+      </div>
     </div>
-    <div class="row2">
-      <label class="fld"><span>Kategori</span><select id="fKat"></select></label>
+
+    <div id="stepForm" style="display:none">
+      <div class="stepHead">
+        <button onclick="finStep('pilih')" aria-label="Kembali pilih jenis">&larr;</button>
+        <h3 id="formTitle">Tambah Transaksi</h3>
+      </div>
+      <p class="hint" id="formHint">Isi data, lalu masukkan PIN untuk menyimpan.</p>
+      <div style="display:none"><select id="fTipe"></select></div>
+      <label class="fld"><span>Tanggal</span><input type="date" id="fTanggal"></label>
+      <label class="fld"><span>Keterangan</span><input type="text" id="fKet" placeholder="misal: beli sabun mandi"></label>
+      <div class="row2">
+        <label class="fld"><span>Nominal (Rp)</span><input type="number" id="fNom" inputmode="numeric" min="1" placeholder="4000"></label>
+        <label class="fld"><span>Kategori</span><select id="fKat"></select></label>
+      </div>
       <label class="fld"><span id="lblAkun">Akun</span><select id="fAkun"></select></label>
+      <label class="fld" id="wrapTujuan" style="display:none"><span id="lblTujuan">Akun Tujuan</span><select id="fTujuan"></select></label>
+      <p class="hint" id="hintTipe" style="display:none"></p>
+      <label class="fld"><span>Foto bukti (boleh kosong)</span><input type="file" id="fFoto" accept="image/*"></label>
+      <label class="fld"><span>PIN 6 angka</span><input type="password" id="fPin" inputmode="numeric" maxlength="6" placeholder="******"></label>
+      <div class="actions">
+        <button class="btnCancel" onclick="closeAdd()">Batal</button>
+        <button class="btnSave" id="btnSave" onclick="submitAdd()">Simpan</button>
+      </div>
+      <button class="btnDanger" id="btnDelete" style="display:none" onclick="submitDelete()">Hapus transaksi ini</button>
+      <div id="formMsg"></div>
     </div>
-    <label class="fld" id="wrapTujuan" style="display:none"><span id="lblTujuan">Akun Tujuan</span><select id="fTujuan"></select></label>
-    <p class="hint" id="hintTipe" style="display:none"></p>
-    <label class="fld"><span>Foto bukti (boleh kosong)</span><input type="file" id="fFoto" accept="image/*"></label>
-    <label class="fld"><span>PIN 6 angka</span><input type="password" id="fPin" inputmode="numeric" maxlength="6" placeholder="******"></label>
-    <div class="actions">
-      <button class="btnCancel" onclick="closeAdd()">Batal</button>
-      <button class="btnSave" id="btnSave" onclick="submitAdd()">Simpan</button>
-    </div>
-    <button class="btnDanger" id="btnDelete" style="display:none" onclick="submitDelete()">Hapus transaksi ini</button>
-    <div id="formMsg"></div>
+
   </div>
 </div>
 <div class="loading" id="loadingDiv" role="status" aria-live="polite">Menyiapkan ringkasan keuangan...</div>
@@ -694,12 +744,17 @@ function finSetVal(id, val){
     el.value = val;
   }
 }
+function finStep(which){
+  var pilih = document.getElementById('stepPilih');
+  var form = document.getElementById('stepForm');
+  if(!pilih || !form) return;
+  if(which === 'form'){ pilih.style.display = 'none'; form.style.display = 'block'; }
+  else { form.style.display = 'none'; pilih.style.display = 'block'; }
+}
 function openAdd(){
   finEditingRow = 0;
   var d = new Date();
   var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  document.getElementById('addTitle').textContent = 'Tambah Transaksi';
-  document.getElementById('addHint').textContent = 'Isi data, lalu masukkan PIN untuk menyimpan.';
   document.getElementById('fTanggal').value = iso;
   document.getElementById('fKet').value = '';
   document.getElementById('fNom').value = '';
@@ -710,7 +765,17 @@ function openAdd(){
   document.getElementById('btnDelete').style.display = 'none';
   document.getElementById('fTipe').value = 'Pengeluaran';
   finFillKat();
+  finStep('pilih');
   document.getElementById('addModal').classList.add('open');
+}
+function openAddTipe(tipe){
+  document.getElementById('fTipe').value = tipe;
+  finFillKat();
+  var judul = {'Pemasukan':'Catat Pemasukan','Pengeluaran':'Catat Pengeluaran',
+               'Transfer':'Catat Transfer','Hutang':'Catat Hutang','Piutang':'Catat Piutang'};
+  document.getElementById('formTitle').textContent = judul[tipe] || 'Tambah Transaksi';
+  document.getElementById('formHint').textContent = 'Isi data, lalu masukkan PIN untuk menyimpan.';
+  finStep('form');
 }
 function closeAdd(){ document.getElementById('addModal').classList.remove('open'); }
 function finMsg(txt, ok){
@@ -842,8 +907,6 @@ function openEdit(tgl, ket, nom){
     var it = finFindMatch(tgl, ket, nom);
     if(!it){ alert('Transaksi tidak ditemukan di data terbaru. Coba Segarkan dulu.'); return; }
     finEditingRow = it.row;
-    document.getElementById('addTitle').textContent = 'Ubah Transaksi (baris ' + it.row + ')';
-    document.getElementById('addHint').textContent = 'Ubah data, lalu masukkan PIN untuk menyimpan.';
     document.getElementById('fTipe').value = it.tipe;
     finFillKat();
     document.getElementById('fTanggal').value = it.tanggal;
@@ -857,6 +920,9 @@ function openEdit(tgl, ket, nom){
     document.getElementById('formMsg').textContent = '';
     document.getElementById('btnSave').textContent = 'Perbarui';
     document.getElementById('btnDelete').style.display = 'block';
+    document.getElementById('formTitle').textContent = 'Ubah Transaksi';
+    document.getElementById('formHint').textContent = 'Ubah data, lalu masukkan PIN untuk menyimpan.';
+    finStep('form');
     document.getElementById('addModal').classList.add('open');
   }).catch(function(e){ alert('Gagal konek: ' + e.message); });
 }
