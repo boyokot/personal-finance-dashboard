@@ -156,6 +156,50 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 .fin-toast.on{display:flex;animation:finFade .18s ease}
 @keyframes finFade{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.fin-sheet,.fin-kat,.fin-chip.pop,.fin-toast.on{animation:none!important}.fin-seg-ind,.fin-chip,.btnSave,.fin-nom input{transition:none!important}}
+
+/* ===== TEMA SERAGAM: DASHBOARD mengikuti FORM TRANSAKSI (Gen Z dark-first) ===== */
+:root{
+  --bg:#0E0F13;--card:#17181F;--card2:#22232C;--txt:#F5F6FA;--muted:#8C8FA3;
+  --green:#3DF2A0;--lime:#C6FF3D;--red:#FF5C7A;--blue:#5CC8FF;--yellow:#FFC24B;
+  --purple:#8452F0;--line:#2A2C36;--field:#22232C;--accent:#C6FF3D;--accent-2:#8452F0;
+}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--txt);font-family:"Plus Jakarta Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+h1{font-size:26px;font-weight:800;letter-spacing:-.8px}
+.header{background:rgba(14,15,19,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+.sub{color:var(--muted)}
+.filter-bar{background:var(--card);border:1px solid var(--line);border-radius:22px}
+.filter-bar label{color:var(--muted)}
+.filter-bar select{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:999px}
+.filter-bar select:focus,.filter-bar select:focus-visible{border-color:var(--accent);outline:3px solid rgba(198,255,61,.2);outline-offset:2px}
+.btn{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:999px;font-weight:700}
+.btn:hover{background:#2A2C36}
+.tier-btn{border-radius:999px;font-weight:800}
+.tier-btn.active-t1{background:var(--accent);color:#0E0F13}
+.tier-btn.active-t2{background:var(--accent-2);color:#fff}
+.tier-btn.inactive{background:var(--field);color:var(--muted);border:1px solid var(--line)}
+.tier-btn.inactive:hover{background:#2A2C36}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 1px 2px rgba(0,0,0,.35);color:var(--txt)}
+.grid .card:first-child{background:linear-gradient(150deg,var(--accent-2),#5A2FD8);border-color:transparent;color:#fff}
+.grid .card:first-child .klabel{color:rgba(255,255,255,.78)}
+.klabel{color:var(--muted)}
+h2,h3{color:var(--txt)}
+h3{font-size:15px;font-weight:800}
+.good{color:var(--green)}.bad{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}
+table{color:var(--txt)}
+th{color:var(--muted);border-bottom:1px solid var(--line)}
+td{border-bottom:1px solid var(--line)}
+.pill{border-radius:999px;font-weight:800}
+.pemasukan{background:rgba(61,242,160,.16);color:#8BFFCB}
+.pengeluaran{background:rgba(255,92,122,.16);color:#FFA9B8}
+.transfer,.piutang{background:rgba(92,200,255,.16);color:#A8E1FF}
+.opname{background:rgba(132,82,240,.22);color:#C9B3FF}
+.hutang{background:rgba(255,194,75,.16);color:#FFD79A}
+.saving-item{background:var(--card2);border:1px solid var(--line);border-radius:16px}
+.saving-bar{background:#2A2C36!important}
+.loading{background:var(--card);border:1px solid var(--line);border-radius:24px;color:var(--muted)}
+.footer{color:var(--muted)}
+.fab{background:var(--accent)!important;color:#0E0F13!important;box-shadow:0 10px 28px rgba(198,255,61,.35)!important}
 </style></head><body><div class="container">
 <div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 11:58 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
@@ -755,7 +799,6 @@ function finLoadEndpoint(cb){
 /* ---- data pilihan ---- */
 var FIN_AKUN = ['Tunai','Bank BSI','E-wallet DANA','Shopeepay','Spaylater','Kartu Kredit','Seabank','Piutang'];
 var FIN_KREDITUR = ['Spaylater','Kartu Kredit','Seabank','Bank BSI','Tunai','E-wallet DANA','Lainnya'];
-var FIN_PIHAK = ['Bunda','Rena','Mas Darto','Prostrike','Budi','Lainnya'];
 
 /* kategori sistem: tidak ditampilkan di picker Masuk/Keluar (hanya untuk tipe khusus) */
 var FIN_SISTEM = ['Transfer','Hutang','Piutang','Bayar Piutang','Opname/Koreksi'];
@@ -979,13 +1022,10 @@ function finRenderAkun(){
       return '<button type="button" class="fin-chip' + (a === kc ? ' on' : '') + '" data-tujuan="' + escAttr(a) + '">' + escAttr(a) + '</button>';
     }).join('');
   } else if(tipe === 'Piutang'){
-    if(lblT){ lblT.textContent = 'Peminjam'; lblT.style.display = ''; }
-    if(wrapT) wrapT.style.display = '';
-    var pc = finEl('fTujuan') ? finEl('fTujuan').value : '';
-    if(!pc || FIN_PIHAK.indexOf(pc) < 0){ pc = FIN_PIHAK[0]; if(finEl('fTujuan')) finEl('fTujuan').value = pc; }
-    if(wrapT) wrapT.innerHTML = FIN_PIHAK.map(function(a){
-      return '<button type="button" class="fin-chip' + (a === pc ? ' on' : '') + '" data-tujuan="' + escAttr(a) + '">' + escAttr(a) + '</button>';
-    }).join('');
+    // Nama peminjam tidak dipakai lagi - cukup catat nominal piutangnya.
+    if(lblT){ lblT.textContent = ''; lblT.style.display = 'none'; }
+    if(wrapT){ wrapT.style.display = 'none'; wrapT.innerHTML = ''; }
+    if(finEl('fTujuan')) finEl('fTujuan').value = '';
   } else {
     if(lblT) lblT.style.display = 'none';
     if(wrapT) wrapT.style.display = 'none';
