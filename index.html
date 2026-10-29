@@ -1,6 +1,7 @@
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard Keuangan Pribadi</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js?v=3"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0b1220;--card:#111b2e;--card2:#16233a;--txt:#e6edf7;--muted:#91a4bd;--green:#2ecc71;--red:#ff6b6b;--blue:#4dabf7;--yellow:#ffd43b;--purple:#b197fc}
 *{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#07101f,#111827 60%,#172033);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -157,49 +158,64 @@ table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px s
 @keyframes finFade{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.fin-sheet,.fin-kat,.fin-chip.pop,.fin-toast.on{animation:none!important}.fin-seg-ind,.fin-chip,.btnSave,.fin-nom input{transition:none!important}}
 
-/* ===== TEMA SERAGAM: DASHBOARD mengikuti FORM TRANSAKSI (Gen Z dark-first) ===== */
-:root{
-  --bg:#0E0F13;--card:#17181F;--card2:#22232C;--txt:#F5F6FA;--muted:#8C8FA3;
-  --green:#3DF2A0;--lime:#C6FF3D;--red:#FF5C7A;--blue:#5CC8FF;--yellow:#FFC24B;
-  --purple:#8452F0;--line:#2A2C36;--field:#22232C;--accent:#C6FF3D;--accent-2:#8452F0;
-}
-html{background:var(--bg)}
-body{background:var(--bg);color:var(--txt);font-family:"Plus Jakarta Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-h1{font-size:26px;font-weight:800;letter-spacing:-.8px}
-.header{background:rgba(14,15,19,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
-.sub{color:var(--muted)}
-.filter-bar{background:var(--card);border:1px solid var(--line);border-radius:22px}
-.filter-bar label{color:var(--muted)}
-.filter-bar select{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:999px}
-.filter-bar select:focus,.filter-bar select:focus-visible{border-color:var(--accent);outline:3px solid rgba(198,255,61,.2);outline-offset:2px}
-.btn{background:var(--field);border:1px solid var(--line);color:var(--txt);border-radius:999px;font-weight:700}
-.btn:hover{background:#2A2C36}
-.tier-btn{border-radius:999px;font-weight:800}
-.tier-btn.active-t1{background:var(--accent);color:#0E0F13}
-.tier-btn.active-t2{background:var(--accent-2);color:#fff}
-.tier-btn.inactive{background:var(--field);color:var(--muted);border:1px solid var(--line)}
-.tier-btn.inactive:hover{background:#2A2C36}
-.card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 1px 2px rgba(0,0,0,.35);color:var(--txt)}
-.grid .card:first-child{background:linear-gradient(150deg,var(--accent-2),#5A2FD8);border-color:transparent;color:#fff}
-.grid .card:first-child .klabel{color:rgba(255,255,255,.78)}
-.klabel{color:var(--muted)}
-h2,h3{color:var(--txt)}
-h3{font-size:15px;font-weight:800}
-.good{color:var(--green)}.bad{color:var(--red)}.blue{color:var(--blue)}.yellow{color:var(--yellow)}
-table{color:var(--txt)}
-th{color:var(--muted);border-bottom:1px solid var(--line)}
-td{border-bottom:1px solid var(--line)}
-.pill{border-radius:999px;font-weight:800}
-.pemasukan{background:rgba(61,242,160,.16);color:#8BFFCB}
-.pengeluaran{background:rgba(255,92,122,.16);color:#FFA9B8}
-.transfer,.piutang{background:rgba(92,200,255,.16);color:#A8E1FF}
-.opname{background:rgba(132,82,240,.22);color:#C9B3FF}
-.hutang{background:rgba(255,194,75,.16);color:#FFD79A}
-.saving-item{background:var(--card2);border:1px solid var(--line);border-radius:16px}
-.saving-bar{background:#2A2C36!important}
-.loading{background:var(--card);border:1px solid var(--line);border-radius:24px;color:var(--muted)}
-.footer{color:var(--muted)}
-.fab{background:var(--accent)!important;color:#0E0F13!important;box-shadow:0 10px 28px rgba(198,255,61,.35)!important}
+/* ===== TEMA RENA: terang, ceria, kartu tebal (sama dengan dashboard Keuangan Rena) ===== */
+:root{--bg:#f7f5ff;--card:#fff;--line:#e8e3f4;--text:#17131f;--muted:#756e82;--purple:#7c3aed;--lime:#c8ff4d;--coral:#ff6b6b;--blue:#4f7cff;--green:#09a66d;--red:#ef476f;--gold:#a16207;--shadow:0 10px 0 #17131f}
+html{background:var(--bg);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px 'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5;background-image:radial-gradient(circle at 7% 5%,#c8ff4d55 0 8%,transparent 22%),radial-gradient(circle at 95% 0,#ff7a9050 0 9%,transparent 24%)}
+.container{max-width:1180px;margin:auto;padding:26px 22px 90px}
+.header{position:relative;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin:0 0 18px;padding:24px 26px;background:linear-gradient(120deg,#7c3aed,#a855f7 55%,#ff6b8a);color:#fff;border:2px solid #17131f;border-radius:28px;box-shadow:var(--shadow);overflow:hidden;backdrop-filter:none;z-index:1}
+.header:after{content:'\2726';position:absolute;right:44%;top:-21px;font-size:95px;color:#c8ff4d55;transform:rotate(16deg)}
+h1{font-family:'Space Grotesk',sans-serif;margin:0;font-size:clamp(27px,5vw,40px);font-weight:700;letter-spacing:-1.4px;color:#fff}
+.sub{color:#f4eefe;font-size:12px;margin-top:6px;font-weight:500}
+.sub #refreshBadge{color:#c8ff4d!important}
+h2{font-family:'Space Grotesk',sans-serif;font-size:22px;letter-spacing:-.5px;margin:0 0 12px}
+h3{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 16px;letter-spacing:-.4px}
+.btn,.tier-btn,.filter-bar select{min-height:44px;background:#fff;color:#17131f;border:2px solid #17131f;border-radius:999px;padding:9px 14px;font:700 13px 'DM Sans',sans-serif;box-shadow:3px 3px 0 #17131f;cursor:pointer;transition:transform .18s,box-shadow .18s}
+.btn:hover,.tier-btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #17131f}
+.btn:active,.tier-btn:active{transform:translate(1px,1px);box-shadow:2px 2px 0 #17131f}
+.btn:focus-visible,.tier-btn:focus-visible,.filter-bar select:focus-visible{outline:2px dashed var(--lime);outline-offset:3px}
+.filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;padding:14px 16px;background:#fff;border:2px solid #17131f;border-radius:22px;box-shadow:5px 5px 0 #17131f}
+.filter-bar label{color:#544c61;font-size:11px;font-weight:800;letter-spacing:.65px;text-transform:uppercase}
+.filter-bar select{width:auto;background:#fff;color:#17131f;border:2px solid #17131f;padding:8px 14px;font-weight:700}
+.tier-btn{padding:10px 14px;font-size:12px;font-weight:800}
+.tier-btn.active-t1{background:var(--lime);color:#17131f}
+.tier-btn.active-t2{background:#ffd39b;color:#17131f}
+.tier-btn.inactive{background:#f3eefc;color:#756e82;border:2px solid #17131f}
+#filterInfo{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{min-width:0;background:var(--card);border:2px solid #17131f;border-radius:22px;padding:18px;box-shadow:5px 5px 0 #17131f;color:var(--text);overflow-x:auto;transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-3px);box-shadow:7px 9px 0 #17131f}
+.grid .card:nth-child(1){background:#e8ffae;color:#17131f}
+.grid .card:nth-child(2){background:#ffd8df;color:#17131f}
+.grid .card:nth-child(3){background:#dcd2ff;color:#17131f}
+.grid .card:nth-child(4){background:#cce8ff;color:#17131f}
+.grid .card .klabel,.grid .card:first-child .klabel{color:#544c61}
+.klabel{font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.65px;color:#544c61}
+.kvalue,.grid .card:first-child .kvalue{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,3vw,30px);font-weight:700;margin-top:9px;letter-spacing:-1px;color:#17131f}
+.good{color:#087954!important}.bad{color:#c52b50!important}.blue{color:#1d4ed8!important}.yellow{color:#a16207!important}
+.section{margin-top:18px}
+.charts{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.charts2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+canvas{max-height:340px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;color:var(--text)}
+th,td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px;font-weight:800}
+td.num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;padding:5px 9px;border:1px solid currentColor;border-radius:999px;font-weight:800;font-size:11px}
+.pemasukan{background:#d1fae5;color:#047857}
+.pengeluaran{background:#ffe4e6;color:#be123c}
+.transfer,.piutang{background:#dbeafe;color:#1d4ed8}
+.opname{background:#e5e7eb;color:#4b5563}
+.hutang{background:#ede9fe;color:#6d28d9}
+.saving-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#faf8ff;border:2px solid #17131f;border-radius:16px;margin-bottom:8px}
+.saving-bar{height:6px;border-radius:99px;background:#ece8f3!important;margin-top:6px}
+.footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center;padding:18px 0}
+.loading{background:var(--card);border:2px solid #17131f;border-radius:22px;box-shadow:5px 5px 0 #17131f;padding:46px 16px;color:var(--muted)}
+.fab{background:linear-gradient(135deg,#c8ff4d,#9BE82B)!important;color:#17131f!important;box-shadow:4px 4px 0 #17131f!important}
+.editBtn{background:#fff;border:2px solid #17131f;border-radius:10px;color:#17131f;font-size:13px;cursor:pointer;padding:2px 6px;box-shadow:2px 2px 0 #17131f}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.charts,.charts2{grid-template-columns:1fr}.header{padding:21px}}
+@media(max-width:560px){.container{padding:14px 12px 92px}.grid{gap:10px}.grid .card{padding:14px;border-radius:18px}.kvalue{font-size:21px}.klabel{font-size:10px}.header{border-radius:22px}th,td{font-size:12px;padding:10px 6px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><div class="container">
 <div class="header"><div><h1>Keuangan Bukhori</h1><div class="sub">Ringkas, rapi, terkendali &middot; 28 Oct 2026 11:58 WIB &middot; <span id="refreshBadge" role="button" tabindex="0" aria-label="Segarkan data" style="color:var(--green);cursor:pointer" onclick="loadAll()">Live</span></div></div><button class="btn" id="btnRefresh" aria-label="Muat ulang data keuangan" onclick="loadAll()">Segarkan</button></div>
 <div class="filter-bar">
