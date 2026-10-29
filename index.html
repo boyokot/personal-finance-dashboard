@@ -532,6 +532,11 @@ function hutangAkun(t){
 }
 
 function initCharts() {
+  // Hapus chart lama dulu supaya canvas tidak bentrok (Canvas is already in use)
+  Object.keys(charts).forEach(function(k){
+    try { if(charts[k] && charts[k].destroy) charts[k].destroy(); } catch(e){}
+    delete charts[k];
+  });
   // Compute monthly stats from allTrx
   var monthly={}, mkeys=[];
   allTrx.forEach(function(t){
