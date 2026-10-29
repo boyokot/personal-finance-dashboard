@@ -771,7 +771,8 @@ function applyFilter() {
     else if(t.tipe==='Piutang')cls='piutang';
     else if(t.tipe==='Hutang')cls='hutang';
     else if(t.tipe==='Opname/Koreksi')cls='opname';
-    var extra = t.tujuan ? '<div style="font-size:11px;color:var(--muted)">'+t.akun+' &rarr; '+t.tujuan+'</div>' : '';
+    // Nama peminjam tidak ditampilkan lagi untuk Piutang.
+    var extra = (t.tujuan && t.tipe !== 'Piutang') ? '<div style="font-size:11px;color:var(--muted)">'+t.akun+' &rarr; '+t.tujuan+'</div>' : '';
     tbody.innerHTML+='<tr><td>'+t.tgl+'</td><td>'+t.ket+extra+'</td><td><span class="pill '+cls+'">'+t.tipe+'</span></td><td class="num">'+rp(t.nom)+'</td>'
       + '<td><button class="editBtn" title="Ubah / hapus"'
       + ' data-tgl="'+escAttr(t.date)+'"'
