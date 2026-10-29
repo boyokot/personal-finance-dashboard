@@ -202,7 +202,7 @@ td.num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .footer{color:var(--muted);font-size:12px;margin-top:18px;text-align:center;padding:18px 0}
 .loading{background:var(--card);border:2px solid #17131f;border-radius:22px;box-shadow:5px 5px 0 #17131f;padding:46px 16px;color:var(--muted)}
 .fab{background:linear-gradient(135deg,#c8ff4d,#9BE82B)!important;color:#17131f!important;box-shadow:4px 4px 0 #17131f!important}
-.editBtn{background:#fff;border:2px solid #17131f;border-radius:10px;color:#17131f;font-size:13px;cursor:pointer;padding:2px 6px;box-shadow:2px 2px 0 #17131f}
+.editBtn{background:#fff;border:2px solid #17131f;border-radius:10px;color:#17131f;font-size:15px;cursor:pointer;min-width:40px;min-height:40px;padding:0 8px;box-shadow:2px 2px 0 #17131f;display:inline-flex;align-items:center;justify-content:center}
 @media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.charts,.charts2{grid-template-columns:1fr}.header{padding:21px}}
 @media(max-width:560px){.container{padding:14px 12px 92px}.grid{gap:10px}.grid .card{padding:14px;border-radius:18px}.kvalue{font-size:21px}.klabel{font-size:10px}.header{border-radius:22px}th,td{font-size:12px;padding:10px 6px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -1734,7 +1734,13 @@ var currentScreen = 'beranda';
 
 function resizeCharts(){
   Object.keys(charts).forEach(function(k){
-    try { if(charts[k] && charts[k].resize) charts[k].resize(); } catch(e){}
+    var c = charts[k];
+    if(!c || !c.canvas) return;
+    var box = c.canvas.parentNode;
+    var w = box ? box.clientWidth : 0;
+    if(!w) return;                       // kanvas masih tersembunyi, jangan diutak-atik
+    try { c.resize(); } catch(e){}
+    try { c.update('none'); } catch(e){}
   });
 }
 
@@ -1756,9 +1762,12 @@ function showScreen(name, noHash){
   if(!noHash){ try { history.replaceState(null,'','#/'+name); } catch(e){} }
   if(name === 'transaksi'){ try { renderTrxAll(); } catch(e){} }
   if(name === 'pengaturan'){ try { setRefreshInfo(); } catch(e){} }
+  if(name === 'tabungan'){ try { renderTabungan(); } catch(e){} }
+  if(name === 'beranda' || name === 'anggaran'){ try { applyFilter(); } catch(e){} }
   window.scrollTo(0,0);
   setTimeout(resizeCharts, 60);
   setTimeout(resizeCharts, 320);
+  setTimeout(resizeCharts, 700);
 }
 
 function renderTrxAll(){
