@@ -58,7 +58,7 @@ h1{font-size:25px;line-height:1.05;letter-spacing:-.8px;font-weight:900} .sub{fo
 .section{margin-top:12px} .charts,.charts2{grid-template-columns:1fr;gap:12px}
 h2{font-size:22px;line-height:1.1;letter-spacing:-.5px} h3{margin:0 0 14px;font-size:16px;letter-spacing:-.2px}
 canvas{max-height:300px}
-table{min-width:620px;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid var(--line)} th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
 .pill{display:inline-flex;padding:5px 9px;font-weight:700} .pemasukan{background:#e1f5e8;color:#106b3c} .pengeluaran{background:#fde8e8;color:#aa3339} .transfer,.piutang{background:#e5f0fb;color:#1f62a5} .opname{background:#eee9fb;color:#6646ad} .hutang{background:#fff0cf;color:#855900}
 .saving-item{background:var(--card2);border:1px solid #e2eadf}
 .saving-bar{background:#dce6d8!important;height:6px}
@@ -218,13 +218,40 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .bottomnav button.on{background:#C8FF4D;filter:none;opacity:1;border-color:#17131f;box-shadow:2px 2px 0 #17131f;transform:translateY(-2px)}
 .bottomnav button:active{transform:scale(.94)}
 .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tblwrap table{min-width:560px}
+.tblwrap table{min-width:0}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
 #setEndpoint{display:block;width:100%;background:#f2f0fa;border:2px solid #17131f;border-radius:12px;padding:9px 11px;font-size:11px;line-height:1.45;word-break:break-all;font-family:ui-monospace,monospace}
 #setTema button.aktif{background:#C8FF4D}
 #setPingMsg{margin-top:10px}
 @media(max-width:560px){.container{padding-bottom:96px}}
 
+/* ===== HP: tabel jadi kartu (tanpa geser samping) ===== */
+@media(max-width:560px){
+  .card{overflow-x:visible!important}
+  .tblwrap{overflow-x:visible!important}
+  table.cardtable{min-width:0!important;width:100%!important;border-spacing:0}
+  table.cardtable tr.theadrow{display:none!important}
+  table.cardtable,table.cardtable tbody,table.cardtable tr,table.cardtable td{display:block;width:100%}
+  table.cardtable tr:not(.theadrow){border:2px solid #17131f;border-radius:14px;background:#fff;box-shadow:2px 2px 0 #17131f;padding:8px 11px;margin:0 0 10px}
+  table.cardtable td{border:0!important;padding:2px 0!important;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:right!important;font-size:13px;min-height:24px}
+  table.cardtable td::before{content:attr(data-label);flex:none;text-align:left;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:800}
+  table.cardtable td:not([data-label])::before,table.cardtable td[data-label=""]::before{content:none}
+  table.cardtable td.num{font-weight:800}
+  table.cardtable td .pill{font-size:10px}
+  table.cardtable td button.editBtn{min-width:40px;min-height:40px}
+}
+
+@media(max-width:560px){
+  table.cardtable td > div{max-width:100%!important;min-width:0}
+  table.cardtable td[data-label="Progress"]{flex-wrap:wrap}
+  table.cardtable td[data-label="Progress"] > div{width:100%}
+}
+
+@media(min-width:561px){
+  .card table{width:100%!important;min-width:0!important;table-layout:auto}
+  .card td,.card th{word-break:break-word;overflow-wrap:anywhere}
+  .card .tblwrap{overflow-x:visible}
+}
 body[data-tema="ungu"] .bottomnav button.on{background:#7C3AED;color:#fff}
 body[data-tema="ungu"] .fab{background:#7C3AED!important;color:#fff!important}
 body[data-tema="ungu"] .btnSave{background:#7C3AED;color:#fff}
@@ -770,7 +797,7 @@ function renderTabungan() {
   tabungData.forEach(function(t){
     var bc=t.progress>=100?'#2ecc71':t.progress>=50?'#4dabf7':'#ffa94d';
     var bw=Math.min(t.progress,100);
-    tbody.innerHTML+='<tr><td>'+t.nama+'</td><td class="num">'+rp(t.goal)+'</td><td class="num">'+rp(t.terkumpul)+'</td><td class="num">'+rp(t.sisa)+'</td><td><div style="background:#1e3050;border-radius:8px;height:18px;position:relative"><div style="background:'+bc+';border-radius:8px;height:18px;width:'+bw+'%"></div><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700">'+Math.round(t.progress)+'%</span></div></td><td>'+t.deadline+'</td><td>'+t.status+'</td></tr>';
+    tbody.innerHTML+='<tr><td>'+t.nama+'</td><td class="num">'+rp(t.goal)+'</td><td class="num">'+rp(t.terkumpul)+'</td><td class="num">'+rp(t.sisa)+'</td><td><div style="background:#ece8f3;border:1px solid #17131f;border-radius:8px;height:18px;position:relative"><div style="background:'+bc+';border-radius:8px;height:18px;width:'+bw+'%"></div><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700">'+Math.round(t.progress)+'%</span></div></td><td>'+t.deadline+'</td><td>'+t.status+'</td></tr>';
   });
   // Card "Dana Lebaran" — ambil dari data tabungan live (jangan hardcode)
   var lb=tabungData.filter(function(t){return /lebaran/i.test(t.nama)})[0];
@@ -1989,4 +2016,44 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // Auto-load on page load
 loadAll();
+
+/* ===== Label tabel otomatis (untuk tampilan kartu di HP) ===== */
+var _lblTimer = null;
+function labelTables(){
+  var tables = document.querySelectorAll('table');
+  Array.prototype.forEach.call(tables, function(tb){
+    var headRow = null, ths = [];
+    var rows = tb.querySelectorAll('tr');
+    for (var i = 0; i < rows.length; i++){
+      var th = rows[i].querySelectorAll('th');
+      if (th.length){
+        headRow = rows[i];
+        Array.prototype.forEach.call(th, function(h){ ths.push((h.textContent || '').trim()); });
+        break;
+      }
+    }
+    if (!headRow || !ths.length){ return; }
+    tb.classList.add('cardtable');
+    headRow.classList.add('theadrow');
+    Array.prototype.forEach.call(tb.querySelectorAll('tr'), function(tr){
+      if (tr.querySelectorAll('th').length) return;
+      Array.prototype.forEach.call(tr.querySelectorAll('td'), function(td, idx){
+        var lab = ths[idx];
+        if (lab === undefined) lab = '';
+        if (td.getAttribute('data-label') !== lab) td.setAttribute('data-label', lab);
+      });
+    });
+  });
+}
+function _labelSoon(){
+  if (_lblTimer) clearTimeout(_lblTimer);
+  _lblTimer = setTimeout(labelTables, 60);
+}
+if (document.body){
+  try { new MutationObserver(_labelSoon).observe(document.body, {childList:true, subtree:true}); } catch(e){}
+}
+document.addEventListener('DOMContentLoaded', labelTables);
+setTimeout(labelTables, 300);
+setTimeout(labelTables, 1200);
+setTimeout(labelTables, 2500);
 </script></body></html>
