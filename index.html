@@ -546,14 +546,47 @@ function parseCSV(text) {
   return rows;
 }
 
+async function fetchLiveData(){
+  if(!FIN_ENDPOINT || FIN_ENDPOINT.indexOf('http') !== 0) return null;
+  if(finIsAppsScript()) return null;
+  var opt = {cache:'no-store'};
+  var ctrl = null, timer = null;
+  try{
+    if(typeof AbortController !== 'undefined'){ ctrl = new AbortController(); opt.signal = ctrl.signal; }
+    timer = setTimeout(function(){ if(ctrl) try{ ctrl.abort(); }catch(e){} }, 18000);
+    var r = await fetch(finAbsUrl('data'), opt);
+    clearTimeout(timer);
+    if(!r.ok) return null;
+    var j = await r.json();
+    if(!j || !j.ok || !j.trx || !j.trx.length) return null;
+    return j;
+  }catch(e){
+    if(timer) clearTimeout(timer);
+    return null;
+  }
+}
+
 async function loadAll() {
   document.getElementById('loadingDiv').style.display = 'block';
   document.getElementById('dashboardContent').style.display = 'none';
   try {
-    const [transRows, opRows, angRows, tabRows] = await Promise.all([
-      fetchCSV(GIDS.transaksi), fetchCSV(GIDS.opname),
-      fetchCSV(GIDS.anggaran), fetchCSV(GIDS.tabungan)
-    ]);
+    if(!FIN_ENDPOINT || FIN_ENDPOINT.indexOf('http') !== 0){
+      await new Promise(function(res){ finLoadEndpoint(function(){ res(); }); });
+    }
+    var sumber = 'CSV';
+    var live = await fetchLiveData();
+    var transRows, opRows, angRows, tabRows;
+    if(live){
+      transRows = live.trx; opRows = live.opname || [];
+      angRows = live.anggaran || []; tabRows = live.tabungan || [];
+      sumber = 'langsung';
+    } else {
+      var paket = await Promise.all([
+        fetchCSV(GIDS.transaksi), fetchCSV(GIDS.opname),
+        fetchCSV(GIDS.anggaran), fetchCSV(GIDS.tabungan)
+      ]);
+      transRows = paket[0]; opRows = paket[1]; angRows = paket[2]; tabRows = paket[3];
+    }
     parseTransaksi(transRows);
     parseOpname(opRows);
     parseAnggaran(angRows);
@@ -565,9 +598,11 @@ async function loadAll() {
     applyFilter();
     document.getElementById('loadingDiv').style.display = 'none';
     document.getElementById('dashboardContent').style.display = 'block';
-    document.getElementById('refreshBadge').textContent = '🔄 Refresh ('+new Date().toLocaleTimeString('id-ID')+')';
+    var src = (sumber === 'langsung') ? '\u26a1 langsung' : '\u23f3 CSV';
+    document.getElementById('refreshBadge').textContent = '\ud83d\udd04 Refresh ' + src + ' (' + new Date().toLocaleTimeString('id-ID') + ')';
+    window.__sumberData = sumber;
   } catch(e) {
-    document.getElementById('loadingDiv').innerHTML = '❌ Gagal: '+e.message;
+    document.getElementById('loadingDiv').innerHTML = '\u274c Gagal: ' + e.message;
     console.error(e);
   }
 }
@@ -1500,7 +1535,7 @@ function finShowToast(){
 /* ---- payload & kirim ---- */
 function finPayload(pin){
   var tipe = finTipe();
-  return {
+  var p = {
     pin: pin,
     tanggal: finEl('fTanggal').value,
     keterangan: finEl('fKet').value.trim(),
@@ -1510,6 +1545,13 @@ function finPayload(pin){
     akun: finEl('fAkun').value,
     akunTujuan: (tipe === 'Pengeluaran' || tipe === 'Pemasukan' || tipe === 'Opname/Koreksi') ? '' : finEl('fTujuan').value
   };
+  if(p.tipe === 'Transfer'){
+    var _k = String(p.keterangan || '').trim();
+    if(!_k || /^transfer$/i.test(_k) || /^transfer saldo$/i.test(_k)){
+      p.keterangan = 'Transfer ' + p.akun + ' \u2192 ' + (p.akunTujuan || '?');
+    }
+  }
+  return p;
 }
 function finUrl(path, query){
   var p = String(path || '').replace(/^\//, '');
