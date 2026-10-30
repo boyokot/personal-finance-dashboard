@@ -961,14 +961,28 @@ function applyFilter() {
 
 var FIN_ENDPOINT = '';
 var FIN_ENDPOINT_FILE = 'endpoint.txt';
+function finIsAppsScript(){
+  return /script\.google\.com|script\.googleusercontent\.com/.test(FIN_ENDPOINT || '');
+}
+function finNormalizeEndpoint(v){
+  v = String(v || '').replace(/\s+/g, '');
+  if(!v) return '';
+  if(/script\.google\.com/.test(v)){
+    var i = v.indexOf('/exec');
+    if(i > 0) v = v.slice(0, i + 5);
+    return v;
+  }
+  if(v.indexOf('https://') !== 0) return '';
+  return v.replace(/\/+$/, '');
+}
 function finLoadEndpoint(cb){
   cb = cb || function(){};
   if(FIN_ENDPOINT && FIN_ENDPOINT.indexOf('http') === 0){ cb(FIN_ENDPOINT); return; }
   fetch(FIN_ENDPOINT_FILE + '?_=' + Date.now(), {cache:'no-store'})
     .then(function(r){ return r.ok ? r.text() : ''; })
     .then(function(t){
-      var v = (t || '').trim();
-      if(v.indexOf('https://') === 0 && v.indexOf(' ') < 0) FIN_ENDPOINT = v;
+      var v = finNormalizeEndpoint(t || '');
+      if(v) FIN_ENDPOINT = v;
       cb(FIN_ENDPOINT);
     })
     .catch(function(){ cb(FIN_ENDPOINT); });
@@ -1497,15 +1511,32 @@ function finPayload(pin){
     akunTujuan: (tipe === 'Pengeluaran' || tipe === 'Pemasukan' || tipe === 'Opname/Koreksi') ? '' : finEl('fTujuan').value
   };
 }
+function finUrl(path, query){
+  var p = String(path || '').replace(/^\//, '');
+  if(finIsAppsScript()){
+    return FIN_ENDPOINT + (FIN_ENDPOINT.indexOf('?') >= 0 ? '&' : '?')
+      + 'action=' + encodeURIComponent(p) + (query ? '&' + query : '');
+  }
+  return FIN_ENDPOINT + '/' + p + (query ? '?' + query : '');
+}
+function finAbsUrl(path){
+  return FIN_ENDPOINT + '/' + String(path || '').replace(/^\//, '');
+}
 function finPost(path, payload){
-  return fetch(FIN_ENDPOINT + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  }).then(function(r){ return r.json(); });
+  var p = String(path || '').replace(/^\//, '');
+  var opts = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' } };
+  if(finIsAppsScript()){
+    var body = {};
+    for(var k in payload){ if(Object.prototype.hasOwnProperty.call(payload, k)) body[k] = payload[k]; }
+    body.action = p;
+    opts.body = JSON.stringify(body);
+    return fetch(FIN_ENDPOINT, opts).then(function(r){ return r.json(); });
+  }
+  opts.body = JSON.stringify(payload);
+  return fetch(finAbsUrl(p), opts).then(function(r){ return r.json(); });
 }
 function finGetList(pin){
-  return fetch(FIN_ENDPOINT + '/list?n=300&pin=' + encodeURIComponent(pin), {cache:'no-store'})
+  return fetch(finUrl('list', 'n=300&pin=' + encodeURIComponent(pin)), {cache:'no-store'})
     .then(function(r){ return r.json(); });
 }
 function submitAdd(){
@@ -1847,7 +1878,7 @@ function setTestPing(){
   if(!FIN_ENDPOINT){ if(m) m.textContent = 'Alamat simpan belum termuat. Buka ulang halaman.'; return; }
   if(m) m.textContent = 'Menguji koneksi...';
   var t0 = Date.now();
-  fetch(FIN_ENDPOINT + '/ping', {cache:'no-store'})
+  fetch(finUrl('ping'), {cache:'no-store'})
     .then(function(r){ return r.text().then(function(x){ return {code:r.status, body:x}; }); })
     .then(function(o){
       if(m) m.textContent = (o.code === 200 ? 'Tersambung \u2705 ' : 'Gagal \u274c ') + o.code + ' \u00b7 ' + (Date.now()-t0) + ' ms';
