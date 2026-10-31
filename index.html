@@ -1010,17 +1010,49 @@ function finNormalizeEndpoint(v){
   if(v.indexOf('https://') !== 0) return '';
   return v.replace(/\/+$/, '');
 }
+var FIN_RAW_URL = 'https://raw.githubusercontent.com/boyokot/personal-finance-dashboard/main/endpoint.txt';
+
+function finPingUrl(u, ms){
+  ms = ms || 8000;
+  if(!u || u.indexOf('http') !== 0) return Promise.resolve(false);
+  var opt = {cache:'no-store'};
+  var ctrl = null, t = null;
+  try{
+    if(typeof AbortController !== 'undefined'){ ctrl = new AbortController(); opt.signal = ctrl.signal; }
+    t = setTimeout(function(){ if(ctrl) try{ ctrl.abort(); }catch(e){} }, ms);
+    return fetch(u.replace(/\/+$/, '') + '/ping', opt).then(function(r){
+      clearTimeout(t);
+      return r.ok;
+    }).catch(function(){ if(t) clearTimeout(t); return false; });
+  }catch(e){ if(t) clearTimeout(t); return Promise.resolve(false); }
+}
+
 function finLoadEndpoint(cb){
   cb = cb || function(){};
   if(FIN_ENDPOINT && FIN_ENDPOINT.indexOf('http') === 0){ cb(FIN_ENDPOINT); return; }
-  fetch(FIN_ENDPOINT_FILE + '?_=' + Date.now(), {cache:'no-store'})
-    .then(function(r){ return r.ok ? r.text() : ''; })
-    .then(function(t){
-      var v = finNormalizeEndpoint(t || '');
-      if(v) FIN_ENDPOINT = v;
-      cb(FIN_ENDPOINT);
-    })
-    .catch(function(){ cb(FIN_ENDPOINT); });
+  // Urutan: raw GitHub (tanpa cache) -> endpoint.txt di halaman -> cache GitHub Pages
+  var sumber = [
+    FIN_RAW_URL + '?_=' + Date.now(),
+    FIN_ENDPOINT_FILE + '?_=' + Date.now(),
+    'https://boyokot.github.io/personal-finance-dashboard/endpoint.txt?_=' + Date.now()
+  ];
+  var i = 0;
+  function coba(){
+    if(i >= sumber.length){ cb(FIN_ENDPOINT); return; }
+    var url = sumber[i++];
+    fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.text() : ''; })
+      .then(function(t){
+        var v = finNormalizeEndpoint(t || '');
+        if(!v) return coba();
+        return finPingUrl(v, 8000).then(function(sehat){
+          if(sehat){ FIN_ENDPOINT = v; cb(FIN_ENDPOINT); }
+          else { coba(); }
+        });
+      })
+      .catch(function(){ coba(); });
+  }
+  coba();
 }
 
 /* ---- data pilihan ---- */
