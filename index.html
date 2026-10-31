@@ -93,6 +93,8 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-icon-btn:active{transform:scale(.94)}
 .fin-icon-btn.danger{color:var(--expense)}
 .fin-body{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:2px 16px 10px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.fin-body > *{flex:0 0 auto}
+.fin-date{flex:none;min-height:46px}
 .fin-seg{position:relative;display:flex;background:var(--field);border-radius:var(--radius-pill);padding:4px;gap:2px}
 .fin-seg button{position:relative;z-index:1;flex:1;border:0;background:none;color:var(--muted);font:700 11.5px/1 var(--font);padding:9px 1px;border-radius:var(--radius-pill);cursor:pointer;white-space:nowrap;transition:color .2s}
 .fin-seg button.on{color:#14151A;font-weight:800}
@@ -110,8 +112,9 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-date{display:flex;align-items:center;gap:10px;width:100%;height:46px;padding:0 12px;border-radius:var(--radius-field);background:var(--field);color:var(--text);cursor:pointer;overflow:hidden}
 .fin-date:focus-within{box-shadow:0 0 0 2px var(--accent)}
 .fin-date-icon{font-size:18px;line-height:1;flex:none}
-.fin-date input{flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;color:var(--text);font:700 13px var(--font);padding:0;outline:none;cursor:pointer;color-scheme:light;-webkit-appearance:none;appearance:none}
-.fin-date input::-webkit-calendar-picker-indicator{width:20px;height:20px;opacity:.65;cursor:pointer}
+.fin-date input{flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;color:var(--text);font:700 13px var(--font);padding:0;outline:none;cursor:pointer;color-scheme:light}
+.fin-date input::-webkit-calendar-picker-indicator{width:24px;height:24px;opacity:.85;cursor:pointer}
+.fin-date input::-webkit-date-and-time-value{text-align:left}
 .fin-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:-5px}
 .fin-input{width:100%;height:46px;border:0;border-radius:var(--radius-field);background:var(--field);color:var(--text);font:500 15px var(--font);padding:0 14px;outline:none;transition:box-shadow .15s}
 .fin-input:focus{box-shadow:0 0 0 2px var(--accent)}
@@ -1816,14 +1819,12 @@ function finDateLbl(){
 function finOpenDate(ev){
   var el = finEl('fTanggal');
   if(!el) return;
-  if(ev && ev.target === el) return;
+  try { el.focus(); } catch(e) {}
+  // showPicker() harus dipanggil saat klik (user gesture).
   try {
-    el.focus();
-    if(typeof el.showPicker === 'function') el.showPicker();
-    else el.click();
-  } catch(e) {
-    try { el.click(); } catch(_) {}
-  }
+    if(typeof el.showPicker === 'function'){ el.showPicker(); return; }
+  } catch(e) {}
+  try { el.click(); } catch(_) {}
 }
 
 /* ---- PIN ---- */
@@ -2165,7 +2166,10 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   var tgl = finEl('fTanggal');
-  if(tgl) tgl.addEventListener('change', finDateLbl);
+  if(tgl){
+    tgl.addEventListener('change', finDateLbl);
+    tgl.addEventListener('click', function(ev){ finOpenDate(ev); });
+  }
 
   var foto = finEl('fFoto');
   if(foto) foto.addEventListener('change', function(){ finShowThumb(this.files[0] || null); });
