@@ -117,11 +117,14 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-cam{flex:none;width:46px;height:46px;border-radius:var(--radius-field);border:0;background:var(--field);color:var(--text);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;padding:0}
 .fin-cam img{width:100%;height:100%;object-fit:cover}
 .fin-cam.has{border:2px solid var(--accent)}
-.fin-sug{display:none;margin-top:-4px;background:var(--field);border-radius:14px;overflow:hidden;max-height:178px;overflow-y:auto}
+.fin-sug{display:none;flex:none;margin-top:-4px;background:var(--field);border-radius:14px;overflow:hidden;max-height:224px;overflow-y:auto}
 .fin-sug.open{display:block}
 .fin-sug button{display:flex;width:100%;gap:8px;align-items:center;justify-content:space-between;border:0;background:none;color:var(--text);font:600 13px var(--font);padding:10px 12px;text-align:left;cursor:pointer}
 .fin-sug button+button{box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .fin-sug .meta{font-size:10.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+.fin-sug .head{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:9px 12px 3px}
+.fin-chip .pred{font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;background:rgba(0,0,0,.08);border-radius:999px;padding:2px 5px;line-height:1.2;flex:none}
+.fin-chip.on .pred{background:rgba(255,255,255,.22);color:#fff}
 .fin-pin{position:relative;display:flex;gap:7px;justify-content:center}
 .fin-pin .box{width:42px;height:46px;border-radius:13px;background:var(--field);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--text);transition:box-shadow .15s,background .15s}
 .fin-pin .box.filled{background:#e4e0f0}
@@ -313,7 +316,7 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
       <div class="fin-sug" id="sugBox"></div>
       <input type="file" id="fFoto" accept="image/*" style="display:none">
 
-      <div class="fin-label">Kategori</div>
+      <div class="fin-label" id="lblKategori">Kategori</div>
       <div class="fin-chips fin-scroll" id="chipKat"></div>
 
       <div class="fin-label">Akun</div>
@@ -1068,6 +1071,45 @@ var FIN_SISTEM = ['Transfer','Hutang','Piutang','Bayar Piutang','Opname/Koreksi'
 var FIN_KAT_MASUK_BASE = ['Gaji','Penjualan/Usaha','Hadiah','Pembayaran Pinjaman','Lain-lain','Lainnya','Pendapatan Tak Terhitung','Tak Terhitung','Tanpa Kategori'];
 var FIN_KAT_KELUAR_BASE = ['Makanan & Minuman','Transportasi','Keluarga','Pulsa/Internet','Pinjaman','Memberi Pinjaman','Rumah','Kecantikan','Adm Bank','Langganan Tools','Kesehatan','Hiburan','Sedekah','Elektronik','Pakaian','Bisnis','Tak Terhitung','Pengeluaran Tak Terhitung','Pembayaran Pinjaman','Tagihan & Biaya','Hadiah','Lain-lain','Lainnya','Bank','Tanpa Kategori'];
 
+/* kamus kata kunci -> kategori, dipakai untuk prediksi saat riwayat belum cocok */
+var FIN_KAT_KEYWORDS = {
+  'Makanan & Minuman': ['makan','makanan','minum','minuman','kopi','ngopi','teh','bakso','mie','nasi','warung','warteg','kantin','cemilan','snack','roti','ayam','sate','martabak','indomaret','alfamart','resto','cafe','kafe','gorengan','susu','boba','jajan','sarapan','lapar','buah','sayur','telur','beras','gula','minyak','bumbu','masak','catering','prasmanan','es','air mineral'],
+  'Transportasi': ['bensin','pertalite','pertamax','solar','transport','transportasi','ojek','grab','gojek','maxim','angkot','bus','kereta','tiket','parkir','tol','servis','service','oli','ban','motor','mobil','bengkel','cuci motor','ganti oli','ongkir','kurir','ekspedisi','pengiriman'],
+  'Pulsa/Internet': ['pulsa','kuota','internet','data','wifi','telkomsel','indosat','xl','tri','smartfren','paket data','indihome','orbit','modem','topup','top up','voucher'],
+  'Rumah': ['listrik','token listrik','token','air','sewa','kontrakan','rumah','lampu','colokan','deterjen','sabun','kebersihan','perbaikan','kasur','galon','gas','kompor','piring','ember','sapu','pel','tempat tidur','renovasi','bangunan','cat','keran','pipa'],
+  'Keluarga': ['bunda','ibu','ayah','keluarga','ortu','adik','kakak','saudara','anak','nenek','kakek','mertua','sepupu','keponakan','family'],
+  'Kesehatan': ['obat','dokter','klinik','rumah sakit','rs','vitamin','masker','periksa','sakit','apotek','apotik','vaksin','imunisasi','gigi','tensi','laboratorium','lab','fisioterapi'],
+  'Kecantikan': ['potong rambut','pangkas','salon','cukur','skincare','sabun muka','kosmetik','parfum','makeup','facial','creambath','spa','masker wajah','lipstik'],
+  'Pakaian': ['baju','celana','kaos','sepatu','sandal','jaket','pakaian','tas','topi','kemeja','rok','hijab','jilbab','kaus kaki','sabuk','dompet'],
+  'Elektronik': ['elektronik','hp','handphone','charger','kabel','headset','earphone','laptop','komputer','mouse','keyboard','adaptor','baterai','powerbank','tv','kipas','rice cooker','setrika','kulkas','mesin cuci','ac','speaker','kamera'],
+  'Langganan Tools': ['langganan','subscription','netflix','spotify','youtube','google','openai','claude','hosting','domain','vps','server','api','software','app','aplikasi','canva','capcut','adobe','zoom','notion','github','cloudflare'],
+  'Hiburan': ['hiburan','game','bioskop','nonton','liburan','rekreasi','konser','tiket nonton','wisata','jalan jalan','karaoke','steam','playstation'],
+  'Sedekah': ['sedekah','donasi','zakat','infaq','amal','masjid','yatim','panti','derma','gereja','kuil'],
+  'Gaji': ['gaji','upah','honor','bonus','thr','komisi','fee','gajian','pendapatan','penghasilan'],
+  'Penjualan/Usaha': ['jual','penjualan','omzet','usaha','bisnis','klien','project','proyek','prive','order','pesanan','customer','pelanggan','invoice','tagihan klien'],
+  'Hadiah': ['hadiah','gift','angpao','angpau','kado','souvenir'],
+  'Adm Bank': ['adm','admin','biaya transfer','biaya bank','materai','bunga bank','denda','biaya admin'],
+  'Tagihan & Biaya': ['tagihan','iuran','bpjs','asuransi','pajak','retribusi','sampah','keamanan','tilang','stnk','pajak motor','pajak mobil'],
+  'Pinjaman': ['pinjam','utang','hutang','cicilan','kredit','spaylater','paylater','kartu kredit','seabank','talang','angsuran','pokok pinjaman'],
+  'Memberi Pinjaman': ['piutang','pinjamkan','talang','bantu','bantuan','utang orang'],
+  'Pembayaran Pinjaman': ['bayar pinjaman','bayar utang','bayar hutang','pelunasan'],
+  'Bisnis': ['operasional','stok','modal','iklan','ads','promosi','packing','kemasan','gudang','karyawan','sewa tempat'],
+  'Tak Terhitung': ['tak terhitung','tidak terhitung','uncategorized'],
+  'Lain-lain': ['lain','lainnya','lain lain','miscellaneous']
+};
+
+/* merchant/marketplace: kategori tidak pasti, bobot kecil supaya tidak auto-pilih */
+var FIN_KAT_AMBIGUOUS = {
+  'shopee': ['Elektronik','Pakaian','Rumah','Lain-lain'],
+  'shopeepay': ['Lain-lain'],
+  'tokopedia': ['Elektronik','Pakaian','Rumah','Lain-lain'],
+  'lazada': ['Elektronik','Pakaian','Rumah','Lain-lain'],
+  'marketplace': ['Elektronik','Pakaian','Rumah','Lain-lain']
+};
+/* kata kerja umum: jangan sampai memicu prediksi kategori sendirian */
+var FIN_KAT_STOPWORDS = ['beli','bayar','biaya','isi','topup','top up','ambil','kirim','pesan','order','lain','lainnya'];
+var FIN_KAT_KEY_INDEX = null;
+
 var FIN_PLACEHOLDER = {
   'Pengeluaran':'ngopi di kantin',
   'Pemasukan':'gaji bulan ini',
@@ -1083,7 +1125,10 @@ var FIN_WARNA = {
 var finEditingRow = 0;
 var finListCache = [];
 var finKatManual = false;
+var finKatPredicted = '';
+var finKatAuto = false;
 var finSugItems = [];
+var finSugTimer = null;
 var finSugIndex = -1;
 var finKatPool = [];
 
@@ -1107,10 +1152,22 @@ function finNorm(s){
     .replace(/\s+/g,' ').trim();
 }
 function finWords(s){ return finNorm(s).split(' ').filter(function(w){ return w.length > 1; }); }
+var FIN_BULAN = {jan:0,feb:1,mar:2,apr:3,mei:4,jun:5,jul:6,agu:7,agt:7,sep:8,okt:9,nov:10,des:11};
+function finParseDate(v){
+  var s = String(v === undefined || v === null ? '' : v).trim();
+  if(!s) return null;
+  var d = new Date(s);
+  if(!isNaN(d.getTime())) return d;
+  var m = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if(m){
+    var mon = FIN_BULAN[m[2].toLowerCase().slice(0,3)];
+    if(mon !== undefined) return new Date(Number(m[3]), mon, Number(m[1]));
+  }
+  return null;
+}
 function finMonthsAgo(iso){
-  if(!iso) return 12;
-  var d = new Date(iso + 'T00:00:00');
-  if(isNaN(d.getTime())) return 12;
+  var d = finParseDate(iso);
+  if(!d) return 12;
   var now = new Date();
   var m = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
   if(m < 0) m = 0;
@@ -1137,15 +1194,87 @@ var FIN_KAT_TIPE = {
   'Piutang': ['Piutang','Memberi Pinjaman','Bayar Piutang'],
   'Hutang': ['Hutang','Pembayaran Pinjaman','Pinjaman']
 };
+function finKatUnique(arr){
+  var seen = {}, out = [];
+  arr.forEach(function(k){
+    k = String(k === undefined || k === null ? '' : k).trim();
+    if(!k) return;
+    var key = k.toLowerCase();
+    if(seen[key]) return;
+    seen[key] = 1;
+    out.push(k);
+  });
+  return out;
+}
 function finKatBase(tipe){
   var base;
   if(tipe === 'Pemasukan') base = FIN_KAT_MASUK_BASE.slice();
   else if(FIN_KAT_TIPE[tipe]) base = FIN_KAT_TIPE[tipe].concat(FIN_KAT_KELUAR_BASE);
   else base = FIN_KAT_KELUAR_BASE.slice();
+
+  /* kategori nyata dari riwayat, supaya prediksi tidak terbatas daftar bawaan */
+  finHistory(tipe).forEach(function(t){ if(t.kat) base.push(t.kat); });
+  /* kategori anggaran hanya relevan untuk pengeluaran */
+  if(tipe === 'Pengeluaran' && typeof anggaranT1 !== 'undefined' && anggaranT1){
+    anggaranT1.forEach(function(a){ if(a && a.kat) base.push(a.kat); });
+  }
+
   var cur = finEl('fKat') ? finEl('fKat').value : '';
   /* saat edit: kategori lama tetap boleh tampil walau termasuk sistem */
   if(cur && base.indexOf(cur) < 0) base.unshift(cur);
-  return base;
+  return finKatUnique(base);
+}
+function finLev(a, b){
+  a = String(a || ''); b = String(b || '');
+  if(a === b) return 0;
+  var m = a.length, n = b.length, i, j;
+  if(!m) return n;
+  if(!n) return m;
+  var prev = [], cur = [], tmp;
+  for(j = 0; j <= n; j++) prev[j] = j;
+  for(i = 1; i <= m; i++){
+    cur[0] = i;
+    for(j = 1; j <= n; j++){
+      var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    tmp = prev; prev = cur; cur = tmp;
+  }
+  return prev[n];
+}
+function finSim(a, b){
+  if(!a || !b) return 0;
+  return 1 - finLev(a, b) / Math.max(a.length, b.length);
+}
+function finKatKeywordMap(){
+  if(FIN_KAT_KEY_INDEX) return FIN_KAT_KEY_INDEX;
+  var idx = {};
+  Object.keys(FIN_KAT_KEYWORDS).forEach(function(kat){
+    FIN_KAT_KEYWORDS[kat].forEach(function(w){
+      var n = finNorm(w);
+      if(!n) return;
+      if(!idx[n]) idx[n] = [];
+      if(idx[n].indexOf(kat) < 0) idx[n].push(kat);
+    });
+  });
+  FIN_KAT_KEY_INDEX = idx;
+  return idx;
+}
+function finKatConfident(ranked, ket){
+  if(!ranked || !ranked.length) return false;
+  var q = finNorm(ket);
+  if(q.length < 2) return false;
+  if(FIN_KAT_STOPWORDS.indexOf(q) >= 0) return false;
+  var top = ranked[0], second = ranked[1] || {score:0, signal:0};
+  if(!top.signal || top.signal < 6) return false;
+  return top.signal >= (second.signal || 0) * 1.25;
+}
+function finUpdateKatLabel(){
+  var lbl = finEl('lblKategori');
+  if(!lbl) return;
+  lbl.textContent = (finKatPredicted && !finKatManual)
+    ? 'Kategori \u00b7 Prediksi: ' + finKatPredicted
+    : 'Kategori';
 }
 function finKatFreq(tipe, days){
   var out = {}, hist = finHistory(tipe), lim = days || 90;
@@ -1157,37 +1286,68 @@ function finKatFreq(tipe, days){
 }
 function finSuggestKat(ket, tipe){
   var base = finKatBase(tipe);
+  var q = finNorm(ket);
   var qw = finWords(ket);
-  var scores = {};
+  var freq = finKatFreq(tipe, 90);
+  var signals = {};
 
-  if(qw.length){
+  if(q){
+    /* belajar dari deskripsi yang mirip di riwayat */
     finHistory(tipe).forEach(function(t){
-      var hw = finWords(t.ket);
-      if(!hw.length) return;
+      if(!t.kat) return;
+      var h = finNorm(t.ket);
+      if(!h) return;
       var s = 0;
-      qw.forEach(function(q){
+      if(h === q) s += 40;
+      else if(h.indexOf(q) === 0) s += 24;
+      else if(h.indexOf(q) >= 0) s += 14;
+      var hw = h.split(' ');
+      qw.forEach(function(word){
         var best = 0;
-        for(var i = 0; i < hw.length; i++){
-          var h = hw[i], v = 0;
-          if(q === h) v = 3;
-          else if(h.indexOf(q) === 0) v = 2;
-          else if(h.indexOf(q) >= 0) v = 1;
-          else if(q.indexOf(h) === 0 && h.length > 2) v = 1.2;
-          if(v > best) best = v;
-        }
+        hw.forEach(function(hword){
+          if(word === hword) best = Math.max(best, 6);
+          else if(hword.indexOf(word) === 0) best = Math.max(best, 4);
+          else if(hword.indexOf(word) >= 0) best = Math.max(best, 2.5);
+          else if(word.length >= 3 && hword.length >= 3 && finSim(word, hword) >= 0.8) best = Math.max(best, 3);
+        });
         s += best;
       });
-      if(s > 0 && t.kat) scores[t.kat] = (scores[t.kat] || 0) + s * finRecency(t.date);
+      if(s > 0) signals[t.kat] = (signals[t.kat] || 0) + s * finRecency(t.date);
+    });
+
+    /* kamus kata kunci umum */
+    var kw = finKatKeywordMap();
+    Object.keys(kw).forEach(function(word){
+      var w = 0;
+      if(q === word) w = 10;
+      else if(word.length >= 3 && q.indexOf(word) >= 0) w = 7;
+      else if(q.length >= 3 && word.indexOf(q) === 0) w = 5;
+      else if(q.length >= 4 && word.length >= 4 && q.indexOf(' ') < 0 && word.indexOf(' ') < 0 && finSim(q, word) >= 0.8) w = 6;
+      else if(qw.indexOf(word) >= 0) w = 8;
+      if(!w) return;
+      kw[word].forEach(function(kat){
+        if(base.indexOf(kat) >= 0) signals[kat] = (signals[kat] || 0) + w;
+      });
+    });
+
+    /* merchant yang kategorinya ambigu: bobot kecil, jangan auto-pilih */
+    Object.keys(FIN_KAT_AMBIGUOUS).forEach(function(word){
+      if(q.indexOf(word) >= 0){
+        FIN_KAT_AMBIGUOUS[word].forEach(function(kat){
+          if(base.indexOf(kat) >= 0) signals[kat] = (signals[kat] || 0) + 2;
+        });
+      }
     });
   }
 
-  var freq = finKatFreq(tipe, 90);
   var list = base.map(function(k){
-    return { kat:k, score:(scores[k] || 0) + (freq[k] || 0) * 0.15 };
+    var signal = signals[k] || 0;
+    var prior = (freq[k] || 0) * 0.15;
+    return {kat:k, score:signal * 10 + prior, signal:signal};
   });
-
   list.sort(function(a, b){
     if(b.score !== a.score) return b.score - a.score;
+    if(b.signal !== a.signal) return b.signal - a.signal;
     return (freq[b.kat] || 0) - (freq[a.kat] || 0);
   });
   return list;
@@ -1202,25 +1362,51 @@ function finRenderKatChips(auto){
 
   var top = ranked.slice(0, 4).map(function(x){ return x.kat; });
   var cur = finEl('fKat') ? finEl('fKat').value : '';
+  var confident = finKatConfident(ranked, ket);
 
   if(!cur && top.length){
-    var pick = top[0];
+    /* default: kategori terakhir yang dipakai; kalau tidak ada, yang paling sering */
     var last = finSafe(function(){ return localStorage.getItem('fin_last_kat_' + tipe); });
-    if(last && ranked.slice(0, 4).some(function(x){ return x.kat === last && x.score > 0; })) pick = last;
-    finSetKat(pick, true);
-    cur = pick;
+    var pick = '';
+    if(last && ranked.some(function(x){ return x.kat === last; })) pick = last;
+    else if(ranked[0] && ranked[0].score > 0) pick = ranked[0].kat;
+    else if(FIN_KAT_TIPE[tipe] && FIN_KAT_TIPE[tipe].length) pick = FIN_KAT_TIPE[tipe][0];
+    if(pick){
+      finSetKat(pick, true);
+      finKatAuto = true;
+      cur = pick;
+    }
   }
-  if(auto && cur && !finKatManual && top[0] && cur !== top[0] && ranked[0].score > 0){
-    finSetKat(top[0], true);
-    cur = top[0];
+
+  if(auto && !finKatManual && confident){
+    var pred = ranked[0].kat;
+    if(cur !== pred){ finSetKat(pred, true); cur = pred; }
+    finKatAuto = true;
+    finKatPredicted = pred;
+  } else {
+    /* prediksi lama jangan tertinggal sebagai kategori terpilih saat keyakinan turun */
+    if(!confident && !finKatManual && finKatAuto && cur && finNorm(ket).length >= 2){
+      if(finEl('fKat')) finEl('fKat').value = '';
+      cur = '';
+      finKatAuto = false;
+    }
+    finKatPredicted = '';
   }
+  finUpdateKatLabel();
+
   if(cur && top.indexOf(cur) < 0) top = [cur].concat(top).slice(0, 4);
 
   var html = '';
   top.forEach(function(k, i){
     var on = (k === (finEl('fKat') ? finEl('fKat').value : ''));
-    html += '<button type="button" class="fin-chip' + (on ? ' on' : '') + '" data-kat="' + escAttr(k) + '">'
-          + (i === 0 ? '<span class="dot"></span>' : '') + escAttr(k) + '</button>';
+    var isPred = (k === finKatPredicted && !finKatManual);
+    html += '<button type="button" class="fin-chip' + (on ? ' on' : '') + '" data-kat="' + escAttr(k) + '"'
+          + (isPred ? ' aria-label="Prediksi kategori ' + escAttr(k) + '"' : '')
+          + '>'
+          + (i === 0 && !on ? '<span class="dot"></span>' : '')
+          + escAttr(k)
+          + (isPred ? '<span class="pred">prediksi</span>' : '')
+          + '</button>';
   });
   html += '<button type="button" class="fin-chip" data-kat-semua="1" aria-label="Lihat semua kategori">Semua &#9662;</button>';
   box.innerHTML = html;
@@ -1229,10 +1415,15 @@ function finSetKat(k, silent){
   var el = finEl('fKat');
   if(!el) return;
   el.value = k || '';
-  if(!silent) finKatManual = true;
-  var tipe = finTipe();
-  finSafe(function(){ localStorage.setItem('fin_last_kat_' + tipe, k || ''); });
+  if(!silent){
+    finKatManual = true;
+    finKatPredicted = '';
+    finKatAuto = false;
+    var tipe = finTipe();
+    finSafe(function(){ localStorage.setItem('fin_last_kat_' + tipe, k || ''); });
+  }
   finMarkChips('chipKat', 'kat', 'data-kat');
+  finUpdateKatLabel();
 }
 function finMarkChips(boxId, param, attr){
   var box = finEl(boxId);
@@ -1330,6 +1521,8 @@ function finSetTipe(tipe, opts){
   if(ket) ket.placeholder = FIN_PLACEHOLDER[tipe] || 'keterangan singkat';
   if(!opts.keepKat){
     finKatManual = false;
+    finKatPredicted = '';
+    finKatAuto = false;
     if(opts.resetKat && finEl('fKat')) finEl('fKat').value = '';
   }
   finRenderAkun();
@@ -1351,38 +1544,106 @@ function finNomAdd(n){
 /* ---- saran keterangan ---- */
 function finSuggestKet(ket, tipe){
   var q = finNorm(ket);
-  if(q.length < 2) return [];
+  var qw = finWords(ket);
   var hist = finHistory(tipe), map = {};
+
   hist.forEach(function(t){
     var h = finNorm(t.ket);
-    if(!h || h.indexOf(q) < 0) return;
-    var key = h;
-    var hit = map[key];
-    var exact = (h.indexOf(q) === 0) ? 2 : 1;
-    if(!hit){
-      map[key] = { ket:t.ket, kat:t.kat, akun:t.akun, nom:t.nom, n:1, rank:exact * 2 + finRecency(t.date), rec:t.date, best:t.nom };
-    } else {
-      hit.n++;
-      hit.rank += exact * 2 + finRecency(t.date);
-      if(t.date > hit.rec){ hit.rec = t.date; hit.kat = t.kat; hit.akun = t.akun; hit.nom = t.nom; }
+    if(!h) return;
+    var pd = finParseDate(t.date);
+    var ts = pd ? pd.getTime() : 0;
+    var m = map[h];
+    if(!m){
+      m = map[h] = { ket:t.ket, kat:t.kat, akun:t.akun, nom:t.nom, n:0, rec:t.date || '', ts:ts };
+    }
+    m.n++;
+    if(ts > m.ts){
+      m.ts = ts;
+      m.rec = t.date || '';
+      m.kat = t.kat;
+      m.akun = t.akun;
+      m.nom = t.nom;
     }
   });
+
   var arr = Object.keys(map).map(function(k){ return map[k]; });
-  arr.sort(function(a, b){
-    if(b.rank !== a.rank) return b.rank - a.rank;
-    if(b.n !== a.n) return b.n - a.n;
-    return a.rec < b.rec ? 1 : -1;
+
+  if(!q){
+    arr.sort(function(a, b){
+      if(b.n !== a.n) return b.n - a.n;
+      return (b.ts || 0) - (a.ts || 0);
+    });
+    return arr.slice(0, 5);
+  }
+  if(q.length < 2) return [];
+
+  var rankedKat = finSuggestKat(ket, tipe);
+  var predKat = finKatConfident(rankedKat, ket) ? rankedKat[0].kat : '';
+  var scored = [];
+
+  arr.forEach(function(m){
+    var h = finNorm(m.ket);
+    var s = 0;
+    if(h === q) s += 120;
+    else if(h.indexOf(q) === 0) s += 80;
+    else if(h.indexOf(q) >= 0) s += 50;
+    var hw = h.split(' ');
+    qw.forEach(function(word){
+      var best = 0;
+      hw.forEach(function(hword){
+        if(word === hword) best = Math.max(best, 24);
+        else if(hword.indexOf(word) === 0) best = Math.max(best, 18);
+        else if(hword.indexOf(word) >= 0) best = Math.max(best, 12);
+        else if(word.length >= 3 && hword.length >= 3){
+          var sim = finSim(word, hword);
+          if(sim >= 0.8) best = Math.max(best, 16);
+          else if(sim >= 0.72) best = Math.max(best, 9);
+        }
+      });
+      s += best;
+    });
+    if(s > 0){
+      s += Math.log(1 + m.n) * 5 + finRecency(m.rec) * 6;
+      if(predKat && m.kat === predKat) s += 8;
+      scored.push({ item:m, score:s });
+    }
   });
-  return arr.slice(0, 5);
+
+  scored.sort(function(a, b){ return b.score - a.score; });
+  var out = scored.slice(0, 5).map(function(x){ return x.item; });
+
+  /* kalau belum ada yang cocok, tampilkan deskripsi populer dari kategori prediksi */
+  if(out.length < 3 && predKat){
+    var seen = {};
+    out.forEach(function(x){ seen[finNorm(x.ket)] = 1; });
+    arr.filter(function(x){ return x.kat === predKat && !seen[finNorm(x.ket)]; })
+      .sort(function(a, b){ return b.n - a.n; })
+      .slice(0, 5 - out.length)
+      .forEach(function(x){ out.push(x); });
+  }
+
+  /* tetap tampilkan sesuatu kalau query belum dikenal */
+  if(!out.length){
+    arr.sort(function(a, b){
+      if(b.n !== a.n) return b.n - a.n;
+      return (b.ts || 0) - (a.ts || 0);
+    }).slice(0, 3).forEach(function(x){ x.fallback = true; out.push(x); });
+  }
+  return out;
 }
 function finRenderSug(){
   var box = finEl('sugBox');
   if(!box) return;
   if(!finSugItems.length){ box.classList.remove('open'); box.innerHTML = ''; finSugIndex = -1; return; }
-  box.innerHTML = finSugItems.map(function(s){
+  var q = finEl('fKet') ? finNorm(finEl('fKet').value) : '';
+  var fallback = finSugItems.length && finSugItems[0].fallback;
+  var head = (!q || fallback) ? 'Sering dipakai' : 'Saran';
+  var html = '<div class="fin-sug-head">' + head + '</div>';
+  html += finSugItems.map(function(s){
     var meta = [s.kat, s.akun].filter(Boolean).join(' \u00b7 ');
     return '<button type="button" data-sug="' + escAttr(s.ket) + '"><span>' + escAttr(s.ket) + '</span><span class="meta">' + escAttr(meta) + '</span></button>';
   }).join('');
+  box.innerHTML = html;
   box.classList.add('open');
   finSugIndex = -1;
 }
@@ -1392,8 +1653,6 @@ function finApplySug(ket){
   if(!s) return;
   finEl('fKet').value = s.ket;
   if(s.kat){ finSetKat(s.kat); finRenderKatChips(false); }
-  if(s.akun) finSetAkun(s.akun);
-  if(s.nom) finNomSet(s.nom);
   finSugItems = [];
   finRenderSug();
   if(navigator.vibrate) { try { navigator.vibrate(8); } catch(e){} }
@@ -1413,6 +1672,12 @@ function finOnKetInput(){
       if(on) finPop(on);
     }
   }, 150);
+}
+function finOnKetFocus(){
+  var tipe = finTipe();
+  var ket = finEl('fKet') ? finEl('fKet').value : '';
+  finSugItems = finSuggestKet(ket, tipe);
+  finRenderSug();
 }
 function finPop(el){
   if(!el) return;
@@ -1628,6 +1893,7 @@ function submitAdd(){
 
   if(!p.tanggal){ finMsg('Tanggal belum diisi.', false); return; }
   if(!p.keterangan){ finMsg('Keterangan belum diisi.', false); return; }
+  if(!p.kategori){ finMsg('Pilih kategori dulu ya.', false); return; }
   if(!(p.nominal > 0)){ finMsg('Nominal harus lebih dari 0.', false); return; }
   if(!/^\d{6}$/.test(p.pin)){ finMsg('Masukin PIN dulu ya', false); finEl('fPin').focus(); return; }
   if(p.tipe === 'Transfer' && p.akun === p.akunTujuan){ finMsg('Akun asal dan tujuan tidak boleh sama.', false); return; }
@@ -1751,7 +2017,9 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!b) return;
     if(b.hasAttribute('data-kat-semua')){ finOpenKat(); return; }
     finSetKat(b.getAttribute('data-kat'));
-    finPackChip(b);
+    finRenderKatChips(false);
+    var on = finEl('chipKat') ? finEl('chipKat').querySelector('.fin-chip.on') : null;
+    if(on) finPackChip(on);
   });
 
   var boxAkun = finEl('chipAkun');
@@ -1780,11 +2048,19 @@ document.addEventListener('DOMContentLoaded', function(){
   });
 
   var sugBox = finEl('sugBox');
-  if(sugBox) sugBox.addEventListener('click', function(ev){
-    var b = ev.target.closest('button[data-sug]');
-    if(!b) return;
-    finApplySug(b.getAttribute('data-sug'));
-  });
+  if(sugBox){
+    sugBox.addEventListener('pointerdown', function(ev){
+      var b = ev.target.closest('button[data-sug]');
+      if(!b) return;
+      ev.preventDefault();
+      finApplySug(b.getAttribute('data-sug'));
+    });
+    sugBox.addEventListener('click', function(ev){
+      var b = ev.target.closest('button[data-sug]');
+      if(!b) return;
+      finApplySug(b.getAttribute('data-sug'));
+    });
+  }
 
   var katList = finEl('katList');
   if(katList) katList.addEventListener('click', function(ev){
@@ -1807,6 +2083,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var ket = finEl('fKet');
   if(ket){
     ket.addEventListener('input', finOnKetInput);
+    ket.addEventListener('focus', finOnKetFocus);
     ket.addEventListener('keydown', function(ev){
       if(!finSugItems.length) return;
       if(ev.key === 'ArrowDown' || ev.key === 'ArrowUp'){
@@ -1823,7 +2100,13 @@ document.addEventListener('DOMContentLoaded', function(){
         finSugItems = []; finRenderSug();
       }
     });
-    ket.addEventListener('blur', function(){ setTimeout(function(){ finSugItems = []; finRenderSug(); }, 160); });
+    ket.addEventListener('blur', function(){
+      setTimeout(function(){
+        var ae = document.activeElement;
+        if(ae && ae.closest && ae.closest('#sugBox')) return;
+        finSugItems = []; finRenderSug();
+      }, 220);
+    });
   }
 
   var nom = finEl('fNom');
