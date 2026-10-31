@@ -222,6 +222,12 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .bottomnav button:active{transform:scale(.94)}
 .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tblwrap table{min-width:0}
+.trx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.trx-filter label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.trx-filter input{min-height:38px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12.5px 'DM Sans',sans-serif;outline:none}
+.trx-filter input:focus{box-shadow:0 0 0 2px var(--lime)}
+.trx-filter button{min-height:38px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
+.trx-filter button:active{transform:scale(.96)}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
 #setEndpoint{display:block;width:100%;background:#f2f0fa;border:2px solid #17131f;border-radius:12px;padding:9px 11px;font-size:11px;line-height:1.45;word-break:break-all;font-family:ui-monospace,monospace}
 #setTema button.aktif{background:#C8FF4D}
@@ -387,6 +393,11 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
   <div class="card">
     <h3>Semua Transaksi</h3>
     <div class="sub" id="trxAllInfo" style="margin:0 0 10px">-</div>
+    <div class="trx-filter">
+      <label for="trxTanggal">Tanggal</label>
+      <input type="date" id="trxTanggal" aria-label="Filter tanggal transaksi" onchange="renderTrxAll()">
+      <button type="button" onclick="var d=document.getElementById('trxTanggal');if(d)d.value='';renderTrxAll()">Semua tanggal</button>
+    </div>
     <div class="tblwrap"><table>
       <tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th><th>Akun</th><th></th></tr>
       <tbody id="trxAllBody"></tbody>
@@ -2189,17 +2200,30 @@ function showScreen(name, noHash){
   setTimeout(resizeCharts, 700);
 }
 
+function trxDateLabel(v){
+  var d = finParseDate(v);
+  if(!d) return v;
+  try{ return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return v; }
+}
 function renderTrxAll(){
   var body = document.getElementById('trxAllBody');
   if(!body) return;
+  var dateEl = document.getElementById('trxTanggal');
+  var dateVal = dateEl ? dateEl.value : '';
   var src = window.__lastFiltered || allTrx || [];
+  /* filter tanggal spesifik mengalahkan filter bulan */
+  if(dateVal) src = (allTrx || []).filter(function(t){ return t.date === dateVal; });
   var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
   var info = document.getElementById('trxAllInfo');
   if(info){
-    var sel = document.getElementById('filterBulan');
-    var nm = 'Semua bulan';
-    if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
-    info.textContent = rows.length + ' transaksi \u00b7 ' + nm;
+    if(dateVal){
+      info.textContent = rows.length + ' transaksi \u00b7 ' + trxDateLabel(dateVal);
+    } else {
+      var sel = document.getElementById('filterBulan');
+      var nm = 'Semua bulan';
+      if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
+      info.textContent = rows.length + ' transaksi \u00b7 ' + nm;
+    }
   }
   var html = '';
   rows.forEach(function(t){
