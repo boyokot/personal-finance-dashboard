@@ -107,8 +107,9 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-chip.on{background:var(--accent-2);background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15));color:#fff}
 .fin-chip.pop{animation:finChipPop .15s ease}
 @keyframes finChipPop{0%{transform:scale(1)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
-.fin-date{position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:var(--radius-pill);background:var(--field);font:700 12.5px var(--font);color:var(--text);cursor:pointer;overflow:hidden;align-self:flex-start}
+.fin-date{position:relative;display:flex;align-items:center;gap:6px;width:100%;height:46px;padding:0 14px;border-radius:var(--radius-field);background:var(--field);font:700 13px var(--font);color:var(--text);cursor:pointer;overflow:hidden}
 .fin-date input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;cursor:pointer}
+.fin-date-hint{margin-left:auto;font:800 10.5px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .fin-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:-5px}
 .fin-input{width:100%;height:46px;border:0;border-radius:var(--radius-field);background:var(--field);color:var(--text);font:500 15px var(--font);padding:0 14px;outline:none;transition:box-shadow .15s}
 .fin-input:focus{box-shadow:0 0 0 2px var(--accent)}
@@ -224,10 +225,8 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .tblwrap table{min-width:0}
 .trx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 .trx-filter label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.trx-filter input{min-height:38px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12.5px 'DM Sans',sans-serif;outline:none}
-.trx-filter input:focus{box-shadow:0 0 0 2px var(--lime)}
-.trx-filter button{min-height:38px;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12px 'DM Sans',sans-serif;cursor:pointer}
-.trx-filter button:active{transform:scale(.96)}
+.trx-filter select{min-height:38px;max-width:100%;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer;outline:none}
+.trx-filter select:focus{box-shadow:0 0 0 2px var(--lime)}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
 #setEndpoint{display:block;width:100%;background:#f2f0fa;border:2px solid #17131f;border-radius:12px;padding:9px 11px;font-size:11px;line-height:1.45;word-break:break-all;font-family:ui-monospace,monospace}
 #setTema button.aktif{background:#C8FF4D}
@@ -305,6 +304,13 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
         <button type="button" data-tipe="Piutang" role="tab">Piutang</button>
       </div>
 
+      <div class="fin-label">Tanggal</div>
+      <div class="fin-date" title="Ketuk untuk ubah tanggal">
+        <span>&#128197;</span><span id="dateLbl">Hari ini</span>
+        <span class="fin-date-hint">Ubah</span>
+        <input type="date" id="fTanggal" aria-label="Tanggal transaksi">
+      </div>
+
       <div class="fin-nom">
         <span class="rp">Rp</span>
         <input id="fNom" type="text" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Nominal">
@@ -330,11 +336,6 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
 
       <div class="fin-label" id="lblTujuan" style="display:none">Akun Tujuan</div>
       <div class="fin-chips fin-scroll" id="chipTujuan" style="display:none"></div>
-
-      <div class="fin-date">
-        <span>&#128197;</span><span id="dateLbl">Hari ini</span>
-        <input type="date" id="fTanggal" aria-label="Tanggal transaksi">
-      </div>
 
       <div class="fin-label">Masukin PIN dulu ya</div>
       <div class="fin-pin" id="pinWrap">
@@ -394,9 +395,10 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
     <h3>Semua Transaksi</h3>
     <div class="sub" id="trxAllInfo" style="margin:0 0 10px">-</div>
     <div class="trx-filter">
-      <label for="trxTanggal">Tanggal</label>
-      <input type="date" id="trxTanggal" aria-label="Filter tanggal transaksi" onchange="renderTrxAll()">
-      <button type="button" onclick="var d=document.getElementById('trxTanggal');if(d)d.value='';renderTrxAll()">Semua tanggal</button>
+      <label for="trxKategori">Kategori</label>
+      <select id="trxKategori" aria-label="Filter kategori transaksi" onchange="renderTrxAll()">
+        <option value="all">Semua kategori</option>
+      </select>
     </div>
     <div class="tblwrap"><table>
       <tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th><th>Akun</th><th></th></tr>
@@ -606,6 +608,7 @@ async function loadAll() {
     parseAnggaran(angRows);
     parseTabungan(tabRows);
     buildBulanOpts();
+    buildTrxKatOpts();
     initCharts();
     renderSavingPlan();
     renderTabungan();
@@ -774,6 +777,31 @@ function buildBulanOpts() {
     var selAttr=k===defVal?' selected':'';
     sel.innerHTML+='<option value="'+k+'"'+selAttr+'>'+set[k]+'</option>';
   });
+}
+
+function trxKatName(t){
+  return String((t && t.kat) || '').trim() || 'Tanpa Kategori';
+}
+
+function buildTrxKatOpts(){
+  var sel = document.getElementById('trxKategori');
+  if(!sel) return;
+  var prev = sel.value || 'all';
+  var set = {};
+  (allTrx || []).forEach(function(t){ set[trxKatName(t)] = true; });
+  var keys = Object.keys(set).sort(function(a,b){ return a.localeCompare(b, 'id'); });
+  sel.innerHTML = '';
+  var optAll = document.createElement('option');
+  optAll.value = 'all';
+  optAll.textContent = 'Semua kategori';
+  sel.appendChild(optAll);
+  keys.forEach(function(k){
+    var o = document.createElement('option');
+    o.value = k;
+    o.textContent = k;
+    sel.appendChild(o);
+  });
+  sel.value = (prev !== 'all' && set[prev]) ? prev : 'all';
 }
 
 function getAnggaranLabels(){ return currentTier===1?anggaranT1.map(function(a){return a.kat}):anggaranT2.map(function(a){return a.kat}); }
@@ -2200,30 +2228,22 @@ function showScreen(name, noHash){
   setTimeout(resizeCharts, 700);
 }
 
-function trxDateLabel(v){
-  var d = finParseDate(v);
-  if(!d) return v;
-  try{ return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}); }catch(e){ return v; }
-}
 function renderTrxAll(){
   var body = document.getElementById('trxAllBody');
   if(!body) return;
-  var dateEl = document.getElementById('trxTanggal');
-  var dateVal = dateEl ? dateEl.value : '';
   var src = window.__lastFiltered || allTrx || [];
-  /* filter tanggal spesifik mengalahkan filter bulan */
-  if(dateVal) src = (allTrx || []).filter(function(t){ return t.date === dateVal; });
+  var katSel = document.getElementById('trxKategori');
+  var katVal = katSel ? katSel.value : 'all';
+  if(katVal && katVal !== 'all'){
+    src = src.filter(function(t){ return trxKatName(t) === katVal; });
+  }
   var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
   var info = document.getElementById('trxAllInfo');
   if(info){
-    if(dateVal){
-      info.textContent = rows.length + ' transaksi \u00b7 ' + trxDateLabel(dateVal);
-    } else {
-      var sel = document.getElementById('filterBulan');
-      var nm = 'Semua bulan';
-      if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
-      info.textContent = rows.length + ' transaksi \u00b7 ' + nm;
-    }
+    var sel = document.getElementById('filterBulan');
+    var nm = 'Semua bulan';
+    if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
+    info.textContent = rows.length + ' transaksi \u00b7 ' + nm + (katVal !== 'all' ? ' \u00b7 ' + katVal : '');
   }
   var html = '';
   rows.forEach(function(t){
