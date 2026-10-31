@@ -112,7 +112,7 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-date{display:flex;align-items:center;gap:10px;width:100%;height:46px;padding:0 12px;border-radius:var(--radius-field);background:var(--field);color:var(--text);cursor:pointer;overflow:hidden}
 .fin-date:focus-within{box-shadow:0 0 0 2px var(--accent)}
 .fin-date-icon{font-size:18px;line-height:1;flex:none}
-.fin-date input{flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;color:var(--text);font:700 13px var(--font);padding:0;outline:none;cursor:pointer;color-scheme:light}
+.fin-date input{flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;color:var(--text);font:700 13px var(--font);padding:0;outline:none;cursor:pointer;color-scheme:light;pointer-events:none}
 .fin-date input::-webkit-calendar-picker-indicator{width:24px;height:24px;opacity:.85;cursor:pointer}
 .fin-date input::-webkit-date-and-time-value{text-align:left}
 .fin-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:-5px}
@@ -1819,12 +1819,18 @@ function finDateLbl(){
 function finOpenDate(ev){
   var el = finEl('fTanggal');
   if(!el) return;
-  try { el.focus(); } catch(e) {}
-  // showPicker() harus dipanggil saat klik (user gesture).
+  if(ev && ev.preventDefault) ev.preventDefault();
+  // Hanya satu jalur: pembungkus .fin-date yang membuka kalender.
+  try { el.focus({preventScroll:true}); } catch(e) {}
+  if(typeof el.showPicker === 'function'){
+    try { el.showPicker(); return; } catch(e) {}
+  }
+  // Cadangan untuk peramban tanpa showPicker: klik sekali saja, tanpa rekursi.
   try {
-    if(typeof el.showPicker === 'function'){ el.showPicker(); return; }
-  } catch(e) {}
-  try { el.click(); } catch(_) {}
+    el.style.pointerEvents = 'auto';
+    el.click();
+    setTimeout(function(){ el.style.pointerEvents = ''; }, 600);
+  } catch(_) {}
 }
 
 /* ---- PIN ---- */
@@ -2168,7 +2174,6 @@ document.addEventListener('DOMContentLoaded', function(){
   var tgl = finEl('fTanggal');
   if(tgl){
     tgl.addEventListener('change', finDateLbl);
-    tgl.addEventListener('click', function(ev){ finOpenDate(ev); });
   }
 
   var foto = finEl('fFoto');
