@@ -228,6 +228,13 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .bottomnav button:active{transform:scale(.94)}
 .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tblwrap table{min-width:0}
+.trx-total{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border:2px solid var(--line);border-radius:14px;background:#fff}
+.trx-total .big{font:800 15px 'DM Sans',sans-serif;color:var(--txt);letter-spacing:.01em}
+.trx-total .lbl{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.trx-total .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--field);font:700 11.5px 'DM Sans',sans-serif;color:var(--txt);white-space:nowrap}
+.trx-total .chip.masuk{background:#E4F8D3;color:#2E6B00}
+.trx-total .chip.keluar{background:#FFE0E7;color:#A3123B}
+.trx-total .chip.netto{background:#EDE4FF;color:#4B1FA8}
 .trx-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 .trx-filter label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .trx-filter select{min-height:38px;max-width:100%;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer;outline:none}
@@ -404,6 +411,7 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
         <option value="all">Semua kategori</option>
       </select>
     </div>
+        <div class="trx-total" id="trxTotal" aria-live="polite"></div>
     <div class="tblwrap"><table>
       <tr><th>Tgl</th><th>Keterangan</th><th>Tipe</th><th class="num">Nominal</th><th>Akun</th><th></th></tr>
       <tbody id="trxAllBody"></tbody>
@@ -2254,7 +2262,33 @@ function renderTrxAll(){
     src = src.filter(function(t){ return trxKatName(t) === katVal; });
   }
   var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
-  var info = document.getElementById('trxAllInfo');
+    var jumlah = {masuk:0, keluar:0, transfer:0, piutang:0, hutang:0, opname:0};
+  rows.forEach(function(t){
+    var n = Number(t.nom) || 0;
+    if(t.tipe === 'Pemasukan') jumlah.masuk += n;
+    else if(t.tipe === 'Pengeluaran') jumlah.keluar += n;
+    else if(t.tipe === 'Transfer') jumlah.transfer += n;
+    else if(t.tipe === 'Piutang') jumlah.piutang += n;
+    else if(t.tipe === 'Hutang') jumlah.hutang += n;
+    else jumlah.opname += n;
+  });
+  var grand = jumlah.masuk + jumlah.keluar + jumlah.transfer + jumlah.piutang + jumlah.hutang + jumlah.opname;
+  var netto = jumlah.masuk - jumlah.keluar;
+  var totalBox = document.getElementById('trxTotal');
+  if(totalBox){
+    var chips = '';
+    if(jumlah.masuk) chips += '<span class="chip masuk">Masuk ' + rp(jumlah.masuk) + '</span>';
+    if(jumlah.keluar) chips += '<span class="chip keluar">Keluar ' + rp(jumlah.keluar) + '</span>';
+    if(jumlah.transfer) chips += '<span class="chip">Transfer ' + rp(jumlah.transfer) + '</span>';
+    if(jumlah.piutang) chips += '<span class="chip">Piutang ' + rp(jumlah.piutang) + '</span>';
+    if(jumlah.hutang) chips += '<span class="chip">Hutang ' + rp(jumlah.hutang) + '</span>';
+    if(jumlah.opname) chips += '<span class="chip">Opname ' + rp(jumlah.opname) + '</span>';
+    if(!rows.length) chips = '<span class="chip">Tidak ada data</span>';
+    totalBox.innerHTML = '<span class="lbl">Total</span><span class="big">' + rp(grand) + '</span>' + chips
+      + (rows.length ? '<span class="chip netto">Netto ' + (netto < 0 ? '-' : '+') + rp(Math.abs(netto)) + '</span>' : '');
+  }
+
+var info = document.getElementById('trxAllInfo');
   if(info){
     var sel = document.getElementById('filterBulan');
     var nm = 'Semua bulan';
