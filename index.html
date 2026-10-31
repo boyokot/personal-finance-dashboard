@@ -107,9 +107,11 @@ table{min-width:0;font-size:12px} th,td{padding:11px 9px;border-bottom:1px solid
 .fin-chip.on{background:var(--accent-2);background-image:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15));color:#fff}
 .fin-chip.pop{animation:finChipPop .15s ease}
 @keyframes finChipPop{0%{transform:scale(1)}55%{transform:scale(1.06)}100%{transform:scale(1)}}
-.fin-date{position:relative;display:flex;align-items:center;gap:6px;width:100%;height:46px;padding:0 14px;border-radius:var(--radius-field);background:var(--field);font:700 13px var(--font);color:var(--text);cursor:pointer;overflow:hidden}
-.fin-date input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;cursor:pointer}
-.fin-date-hint{margin-left:auto;font:800 10.5px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fin-date{display:flex;align-items:center;gap:10px;width:100%;height:46px;padding:0 12px;border-radius:var(--radius-field);background:var(--field);color:var(--text);cursor:pointer;overflow:hidden}
+.fin-date:focus-within{box-shadow:0 0 0 2px var(--accent)}
+.fin-date-icon{font-size:18px;line-height:1;flex:none}
+.fin-date input{flex:1;min-width:0;width:100%;height:100%;border:0;background:transparent;color:var(--text);font:700 13px var(--font);padding:0;outline:none;cursor:pointer;color-scheme:light;-webkit-appearance:none;appearance:none}
+.fin-date input::-webkit-calendar-picker-indicator{width:20px;height:20px;opacity:.65;cursor:pointer}
 .fin-label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:-5px}
 .fin-input{width:100%;height:46px;border:0;border-radius:var(--radius-field);background:var(--field);color:var(--text);font:500 15px var(--font);padding:0 14px;outline:none;transition:box-shadow .15s}
 .fin-input:focus{box-shadow:0 0 0 2px var(--accent)}
@@ -305,9 +307,8 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
       </div>
 
       <div class="fin-label">Tanggal</div>
-      <div class="fin-date" title="Ketuk untuk ubah tanggal">
-        <span>&#128197;</span><span id="dateLbl">Hari ini</span>
-        <span class="fin-date-hint">Ubah</span>
+      <div class="fin-date" title="Pilih tanggal" onclick="finOpenDate(event)">
+        <span class="fin-date-icon" aria-hidden="true">&#128197;</span>
         <input type="date" id="fTanggal" aria-label="Tanggal transaksi">
       </div>
 
@@ -1809,14 +1810,20 @@ function finTodayISO(){
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 function finDateLbl(){
-  var el = finEl('fTanggal'), lbl = finEl('dateLbl');
-  if(!el || !lbl) return;
-  var v = el.value || finTodayISO();
-  if(v === finTodayISO()){ lbl.textContent = 'Hari ini'; return; }
-  var d = new Date(v + 'T00:00:00');
-  if(isNaN(d.getTime())){ lbl.textContent = 'Pilih tanggal'; return; }
-  var bl = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  lbl.textContent = d.getDate() + ' ' + bl[d.getMonth()] + ' ' + d.getFullYear();
+  var el = finEl('fTanggal');
+  if(el && !el.value) el.value = finTodayISO();
+}
+function finOpenDate(ev){
+  var el = finEl('fTanggal');
+  if(!el) return;
+  if(ev && ev.target === el) return;
+  try {
+    el.focus();
+    if(typeof el.showPicker === 'function') el.showPicker();
+    else el.click();
+  } catch(e) {
+    try { el.click(); } catch(_) {}
+  }
 }
 
 /* ---- PIN ---- */
