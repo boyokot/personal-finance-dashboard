@@ -996,6 +996,7 @@ function applyFilter() {
 
 var FIN_ENDPOINT = '';
 var FIN_ENDPOINT_FILE = 'endpoint.txt';
+var FIN_LS_KEY = 'fin_endpoint_v1';
 function finIsAppsScript(){
   return /script\.google\.com|script\.googleusercontent\.com/.test(FIN_ENDPOINT || '');
 }
@@ -1030,29 +1031,32 @@ function finPingUrl(u, ms){
 function finLoadEndpoint(cb){
   cb = cb || function(){};
   if(FIN_ENDPOINT && FIN_ENDPOINT.indexOf('http') === 0){ cb(FIN_ENDPOINT); return; }
-  // Urutan: raw GitHub (tanpa cache) -> endpoint.txt di halaman -> cache GitHub Pages
-  var sumber = [
-    FIN_RAW_URL + '?_=' + Date.now(),
-    FIN_ENDPOINT_FILE + '?_=' + Date.now(),
-    'https://boyokot.github.io/personal-finance-dashboard/endpoint.txt?_=' + Date.now()
-  ];
-  var i = 0;
-  function coba(){
-    if(i >= sumber.length){ cb(FIN_ENDPOINT); return; }
-    var url = sumber[i++];
-    fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.ok ? r.text() : ''; })
-      .then(function(t){
-        var v = finNormalizeEndpoint(t || '');
-        if(!v) return coba();
-        return finPingUrl(v, 8000).then(function(sehat){
-          if(sehat){ FIN_ENDPOINT = v; cb(FIN_ENDPOINT); }
-          else { coba(); }
-        });
-      })
-      .catch(function(){ coba(); });
+  var cands = [];
+  function add(v){
+    v = finNormalizeEndpoint(v || '');
+    if(v && cands.indexOf(v) < 0) cands.push(v);
   }
-  coba();
+  try{ add(localStorage.getItem(FIN_LS_KEY)); }catch(e){}
+  var urls = [FIN_RAW_URL, FIN_ENDPOINT_FILE, 'https://boyokot.github.io/personal-finance-dashboard/endpoint.txt'];
+  Promise.all(urls.map(function(u){
+    return fetch(u + '?_=' + Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.text() : ''; })
+      .then(function(t){ add(t); })
+      .catch(function(){});
+  })).then(function(){
+    if(!cands.length){ cb(FIN_ENDPOINT); return; }
+    return Promise.all(cands.map(function(v){
+      return finPingUrl(v, 6000).then(function(ok){ return ok ? v : null; });
+    })).then(function(res){
+      var pick = null;
+      for(var i = 0; i < res.length; i++){ if(res[i]){ pick = res[i]; break; } }
+      if(pick){
+        FIN_ENDPOINT = pick;
+        try{ localStorage.setItem(FIN_LS_KEY, pick); }catch(e){}
+      }
+      cb(FIN_ENDPOINT);
+    });
+  }).catch(function(){ cb(FIN_ENDPOINT); });
 }
 
 /* ---- data pilihan ---- */
