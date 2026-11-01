@@ -1382,9 +1382,15 @@ function finPingUrl(u, ms){
   try{
     if(typeof AbortController !== 'undefined'){ ctrl = new AbortController(); opt.signal = ctrl.signal; }
     t = setTimeout(function(){ if(ctrl) try{ ctrl.abort(); }catch(e){} }, ms);
-    return fetch(u.replace(/\/+$/, '') + '/ping', opt).then(function(r){
+    var isAs = /script\.google\.com|script\.googleusercontent\.com/.test(u);
+    var pingUrl = isAs
+      ? u + (u.indexOf('?') >= 0 ? '&' : '?') + 'action=ping'
+      : u.replace(/\/+$/, '') + '/ping';
+    return fetch(pingUrl, opt).then(function(r){
       clearTimeout(t);
-      return r.ok;
+      if(!r.ok) return false;
+      if(!isAs) return true;
+      return r.json().then(function(j){ return !!(j && j.ok); }).catch(function(){ return false; });
     }).catch(function(){ if(t) clearTimeout(t); return false; });
   }catch(e){ if(t) clearTimeout(t); return Promise.resolve(false); }
 }
