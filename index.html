@@ -1338,7 +1338,7 @@ function applyFilter() {
   try { renderTrxAll(); } catch(e){}
   var tbody=document.getElementById('trxTableBody');
   tbody.innerHTML='';
-  filtered.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; }).slice(0,10).forEach(function(t){
+  filtered.slice().reverse().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; }).slice(0,10).forEach(function(t){
     var cls='pengeluaran';
     if(t.tipe==='Pemasukan')cls='pemasukan';
     else if(t.tipe==='Transfer')cls='transfer';
@@ -2595,7 +2595,9 @@ function renderTrxAll(){
   if(katVal && katVal !== 'all'){
     src = src.filter(function(t){ return trxKatName(t) === katVal; });
   }
-  var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
+  // Terbaru di atas: balik dulu urutan sheet (lama->baru), lalu sort stabil per tanggal desc
+  // supaya transaksi yang paling akhir dicatat muncul paling atas pada tanggal yang sama.
+  var rows = src.slice().reverse().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
     var jumlah = {masuk:0, keluar:0, transfer:0, piutang:0, hutang:0, opname:0};
   rows.forEach(function(t){
     var n = Number(t.nom) || 0;
