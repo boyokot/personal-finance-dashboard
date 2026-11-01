@@ -244,7 +244,44 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .trx-katbtn:active{transform:scale(.98)}
 .fin-kat-wrap.trx-kat-fix{position:fixed;inset:0;z-index:70}
 .trx-kat .item.cur{background:var(--lime)}
+
 .trx-kat .cnt{font-size:10.5px;color:var(--muted);font-weight:700}
+/* panel kategori transaksi: solid, kontras tinggi, tanpa blur */
+.fin-kat-wrap.trx-kat-fix{position:fixed;inset:0;z-index:70;background:rgba(23,19,31,.45);-webkit-backdrop-filter:none;backdrop-filter:none}
+#trxKatWrap .fin-kat.trx-kat{background:#fff;color:#14151A;border-top:2px solid #17131f;border-radius:22px 22px 0 0;max-height:84%}
+#trxKatWrap .fin-kat h4{color:#14151A;font-size:16px;margin:8px 18px 10px}
+#trxKatWrap .fin-kat .srch{padding:0 18px 10px}
+#trxKatWrap .fin-kat .list{padding:0 10px 18px}
+#trxKatWrap .fin-kat .grp{color:#5B6072;padding:12px 12px 6px}
+#trxKatWrap .fin-kat .item{color:#14151A;font:700 15px 'DM Sans',sans-serif;padding:13px 12px;border:2px solid transparent;background:#fff;border-radius:14px}
+#trxKatWrap .fin-kat .item:active{background:#f2f0fa}
+#trxKatWrap .fin-kat .item.cur{background:#C8FF4D;border-color:#17131f;box-shadow:2px 2px 0 #17131f}
+#trxKatWrap .fin-kat .item .cnt{color:#5B6072}
+#trxKatWrap .fin-input{background:#f2f0fa;color:#14151A;border:2px solid #17131f}
+/* rincian per akun */
+.akun-row{cursor:pointer}
+.akun-row:active{background:#f2f0fa}
+.akun-row .akun-go{display:inline-block;margin-left:6px;color:#7c3aed;font-weight:800}
+#akunModal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(23,19,31,.5)}
+#akunModal.open{display:flex}
+#akunModal .ak-card{width:100%;max-width:560px;max-height:86dvh;display:flex;flex-direction:column;background:#fff;color:#14151A;border:2px solid #17131f;border-radius:20px;box-shadow:6px 6px 0 #17131f;overflow:hidden}
+#akunModal .ak-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:2px solid #17131f;background:#C8FF4D}
+#akunModal .ak-head h4{margin:0;font-size:15px;font-weight:800;color:#14151A}
+#akunModal .ak-close{min-width:40px;min-height:40px;border:2px solid #17131f;border-radius:12px;background:#fff;font-size:18px;font-weight:800;cursor:pointer}
+#akunModal .ak-sum{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid #e8e3f4}
+#akunModal .ak-chip{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:#f2f0fa;font:700 11.5px 'DM Sans',sans-serif;color:#14151A}
+#akunModal .ak-chip.masuk{background:#E4F8D3;color:#2E6B00}
+#akunModal .ak-chip.keluar{background:#FFE0E7;color:#A3123B}
+#akunModal .ak-chip.saldo{background:#EDE4FF;color:#4B1FA8}
+#akunModal .ak-list{overflow-y:auto;padding:0 8px 10px}
+#akunModal table{width:100%;border-collapse:collapse;font-size:12.5px}
+#akunModal th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#5B6072;padding:10px 8px;text-align:left;position:sticky;top:0;background:#fff}
+#akunModal td{padding:9px 8px;border-bottom:1px solid #eee7f7;vertical-align:top}
+#akunModal td.num{text-align:right;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+#akunModal tr.masuk td.num{color:#2E6B00}
+#akunModal tr.keluar td.num{color:#A3123B}
+#akunModal .ak-foot{padding:10px 16px 14px;border-top:2px solid #17131f;background:#fff}
+#akunModal .ak-foot button{width:100%;height:44px;border:2px solid #17131f;border-radius:12px;background:#C8FF4D;font:800 14px 'DM Sans',sans-serif;cursor:pointer}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
 #setEndpoint{display:block;width:100%;background:#f2f0fa;border:2px solid #17131f;border-radius:12px;padding:9px 11px;font-size:11px;line-height:1.45;word-break:break-all;font-family:ui-monospace,monospace}
 #setTema button.aktif{background:#C8FF4D}
@@ -391,6 +428,17 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
     <div class="list" id="trxKatList"></div>
   </div>
 </div>
+<div id="akunModal" role="dialog" aria-modal="true" aria-label="Rincian akun">
+  <div class="ak-card">
+    <div class="ak-head">
+      <h4 id="akTitle">Akun</h4>
+      <button type="button" class="ak-close" onclick="closeAkunDetail()" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="ak-sum" id="akSum"></div>
+    <div class="ak-list" id="akList"></div>
+    <div class="ak-foot"><button type="button" onclick="closeAkunDetail()">Tutup</button></div>
+  </div>
+</div>
 <div class="loading" id="loadingDiv" role="status" aria-live="polite">Menyiapkan ringkasan keuangan...</div>
 <div id="dashboardContent" style="display:none">
 <section class="screen" data-screen="beranda" id="screen-beranda">
@@ -426,16 +474,6 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
         <span class="arw" aria-hidden="true">&#9662;</span>
       </button>
       <input type="hidden" id="trxKategori" value="all">
-    </div>
-    <div class="trx-filter" id="trxTransferFilter" hidden>
-      <label for="trxDari">Dari akun</label>
-      <select id="trxDari" aria-label="Filter akun asal transfer" onchange="renderTrxAll()">
-        <option value="all">Semua akun</option>
-      </select>
-      <label for="trxKe">Ke akun</label>
-      <select id="trxKe" aria-label="Filter akun tujuan transfer" onchange="renderTrxAll()">
-        <option value="all">Semua akun</option>
-      </select>
     </div>
         <div class="trx-total" id="trxTotal" aria-live="polite"></div>
     <div class="tblwrap"><table>
@@ -839,38 +877,7 @@ function buildTrxKatOpts(){
   hid.value = prev;
   var lbl = document.getElementById('trxKatLabel');
   if(lbl) lbl.textContent = prev === 'all' ? 'Semua kategori' : prev;
-  buildTrxAkunOpts();
   renderTrxKatList('');
-}
-
-function buildTrxAkunOpts(){
-  var dSel = document.getElementById('trxDari');
-  var kSel = document.getElementById('trxKe');
-  if(!dSel || !kSel) return;
-  var dari = {}, ke = {};
-  (allTrx || []).forEach(function(t){
-    if(t.tipe !== 'Transfer') return;
-    if(t.akun) dari[t.akun] = true;
-    if(t.tujuan) ke[t.tujuan] = true;
-  });
-  function isi(sel, set, teksSemua){
-    var prev = sel.value || 'all';
-    var keys = Object.keys(set).sort(function(a,b){ return a.localeCompare(b, 'id'); });
-    sel.innerHTML = '';
-    var o0 = document.createElement('option');
-    o0.value = 'all';
-    o0.textContent = teksSemua;
-    sel.appendChild(o0);
-    keys.forEach(function(k){
-      var o = document.createElement('option');
-      o.value = k;
-      o.textContent = k;
-      sel.appendChild(o);
-    });
-    sel.value = (prev !== 'all' && set[prev]) ? prev : 'all';
-  }
-  isi(dSel, dari, 'Semua akun');
-  isi(kSel, ke, 'Semua akun');
 }
 
 function trxOpenKat(){
@@ -894,6 +901,107 @@ function trxSetKat(k){
   if(lbl) lbl.textContent = (!k || k === 'all') ? 'Semua kategori' : k;
   trxCloseKat();
   renderTrxAll();
+}
+
+/* ---- rincian transaksi per akun ---- */
+function akunArah(t, name){
+  var ket = (t.ket || '').toLowerCase();
+  var kat = (t.kat || '').toLowerCase();
+  var isSrc = ((t.akun || '') === name);
+  var nm = name.toLowerCase();
+
+  if(t.tipe === 'Transfer'){
+    if(isSrc) return {delta: -t.nom, jenis: 'Transfer keluar'};
+    if((t.tujuan || '') === name) return {delta: t.nom, jenis: 'Transfer masuk'};
+    var kn = (t.ket || '').toLowerCase().replace(/[()]/g, ' ').replace(/\u2192|->|\u21d2/g, ' ke ').replace(/\s+/g, ' ');
+    var dest = false;
+    if(nm.indexOf('tunai') >= 0 && kn.indexOf('ke tunai') >= 0) dest = true;
+    else if(nm.indexOf('bsi') >= 0 && (kn.indexOf('ke bsi') >= 0 || kn.indexOf('ke bank') >= 0)) dest = true;
+    else if(nm.indexOf('dana') >= 0 && (kn.indexOf('ke dana') >= 0 || kn.indexOf('ke e-wallet dana') >= 0)) dest = true;
+    else if(nm.indexOf('shopee') >= 0 && (kn.indexOf('ke shopee') >= 0 || kn.indexOf('topup shopee') >= 0)) dest = true;
+    else if(nm.indexOf('seabank') >= 0 && kn.indexOf('ke seabank') >= 0) dest = true;
+    if(dest) return {delta: t.nom, jenis: 'Transfer masuk'};
+    return null;
+  }
+  if(t.tipe === 'Pemasukan'){
+    return isSrc ? {delta: t.nom, jenis: 'Pemasukan'} : null;
+  }
+  if(t.tipe === 'Pengeluaran'){
+    if(isSrc) return {delta: -t.nom, jenis: 'Pengeluaran'};
+    if((name === 'Spaylater' || name === 'Kartu Kredit') && (ket.indexOf('bayar') >= 0 || ket.indexOf('lunas') >= 0)) return {delta: -t.nom, jenis: 'Pembayaran hutang'};
+    return null;
+  }
+  if(t.tipe === 'Hutang'){
+    var isRepay = (ket.indexOf('bayar') >= 0 || ket.indexOf('lunas') >= 0 || ket.indexOf('cicil') >= 0);
+    var isCash = (ket.indexOf('pinjam') >= 0 || ket.indexOf('talang') >= 0);
+    if((t.tujuan || '') === name) return isRepay ? {delta: -t.nom, jenis: 'Bayar hutang'} : {delta: t.nom, jenis: 'Tambah hutang'};
+    if(isSrc && t.akun !== 'Lainnya'){
+      if(isRepay) return {delta: -t.nom, jenis: 'Bayar hutang'};
+      if(isCash) return {delta: t.nom, jenis: 'Pinjaman masuk'};
+    }
+    if(!t.tujuan && (name === 'Spaylater' || name === 'Kartu Kredit')) return isRepay ? {delta: -t.nom, jenis: 'Bayar hutang'} : {delta: t.nom, jenis: 'Tambah hutang'};
+    if(!t.tujuan && isSrc) return isRepay ? {delta: -t.nom, jenis: 'Bayar hutang'} : {delta: t.nom, jenis: 'Pinjaman masuk'};
+    return null;
+  }
+  if(t.tipe === 'Piutang'){
+    var isLoanOut = !(kat.indexOf('bayar') >= 0 || ket.indexOf('bayar') >= 0 || ket.indexOf('lunas') >= 0);
+    if(isSrc) return isLoanOut ? {delta: -t.nom, jenis: 'Pinjam ke orang'} : {delta: t.nom, jenis: 'Piutang kembali'};
+    if(name === 'Piutang') return isLoanOut ? {delta: t.nom, jenis: 'Piutang bertambah'} : {delta: -t.nom, jenis: 'Piutang berkurang'};
+    return null;
+  }
+  return null;
+}
+
+function openAkunDetail(name){
+  var m = document.getElementById('akunModal');
+  if(!m || !name) return;
+  var masuk = 0, keluar = 0, items = [];
+  (allTrx || []).forEach(function(t){
+    var a = akunArah(t, name);
+    if(!a) return;
+    if(a.delta > 0) masuk += a.delta; else keluar += (-a.delta);
+    items.push({t: t, delta: a.delta, jenis: a.jenis});
+  });
+  items.sort(function(x, y){ return x.t.date > y.t.date ? -1 : x.t.date < y.t.date ? 1 : 0; });
+
+  var saldo = null;
+  (opnameData || []).forEach(function(a){ if(a.name === name) saldo = a.actual; });
+  if(saldo === null) saldo = masuk - keluar;
+
+  document.getElementById('akTitle').textContent = 'Akun: ' + name;
+  var saldoAwal = Math.round(saldo - (masuk - keluar));
+  document.getElementById('akSum').innerHTML =
+      '<span class="ak-chip">' + items.length + ' transaksi</span>'
+    + '<span class="ak-chip masuk">Masuk +' + rp(masuk) + '</span>'
+    + '<span class="ak-chip keluar">Keluar \u2212' + rp(keluar) + '</span>'
+    + '<span class="ak-chip">Saldo awal ' + rp(saldoAwal) + '</span>'
+    + '<span class="ak-chip saldo">Saldo akhir ' + rp(saldo) + '</span>';
+
+  var html = '';
+  if(!items.length){
+    html = '<div style="padding:18px;color:#5B6072">Tidak ada transaksi untuk akun ini.</div>';
+  } else {
+    html = '<table><thead><tr><th>Tgl</th><th>Keterangan</th><th class="num">Nominal</th></tr></thead><tbody>';
+    items.forEach(function(x){
+      var cls = x.delta > 0 ? 'masuk' : 'keluar';
+      var sign = x.delta > 0 ? '+' : '\u2212';
+      var sub = (x.t.tipe === 'Transfer' && (x.t.tujuan || ''))
+        ? '<div style="font-size:11px;color:#756e82">' + escAttr(x.t.akun || '') + ' &rarr; ' + escAttr(x.t.tujuan || '') + '</div>'
+        : '';
+      html += '<tr class="' + cls + '"><td>' + escAttr(x.t.tgl || x.t.date || '') + '</td>'
+        + '<td>' + escAttr(x.t.ket || '') + sub
+        + '<div style="font-size:10.5px;color:#756e82">' + escAttr(x.jenis) + '</div></td>'
+        + '<td class="num">' + sign + ' ' + rp(Math.abs(x.delta)) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+  document.getElementById('akList').innerHTML = html;
+  m.classList.add('open');
+}
+
+function closeAkunDetail(){
+  var m = document.getElementById('akunModal');
+  if(m) m.classList.remove('open');
 }
 
 function renderTrxKatList(q){
@@ -1113,7 +1221,7 @@ function applyFilter() {
   var totalKas=0, piutangVal=0;
   opnameData.forEach(function(a){
     var cls=a.diff>=0?'good':'bad';
-    tbodyAkun.innerHTML+='<tr><td>'+a.name+'</td><td class="num">'+rp(a.actual)+'</td><td class="num '+cls+'">'+rp(a.diff)+'</td></tr>';
+    tbodyAkun.innerHTML+='<tr class="akun-row" data-akun="'+escAttr(a.name)+'"><td>'+a.name+'<span class="akun-go">&rsaquo;</span></td><td class="num">'+rp(a.actual)+'</td><td class="num '+cls+'">'+rp(a.diff)+'</td></tr>';
     if(a.name!=='Piutang') totalKas+=a.actual; else piutangVal=a.actual;
   });
   // Summary rows
@@ -1122,7 +1230,7 @@ function applyFilter() {
   hutangAll.forEach(function(t){ var k=hutangAkun(t); hutangByAkun[k]=(hutangByAkun[k]||0)+hutangSigned(t); });
   Object.keys(hutangByAkun).sort().forEach(function(k){
     if(!hutangByAkun[k]) return;
-    tbodyAkun.innerHTML+='<tr style="color:var(--yellow)"><td>'+k+'</td><td class="num">-'+rp(hutangByAkun[k])+'</td><td></td></tr>';
+    tbodyAkun.innerHTML+='<tr class="akun-row" data-akun="'+escAttr(k)+'" style="color:var(--yellow)"><td>'+k+'<span class="akun-go">&rsaquo;</span></td><td class="num">-'+rp(hutangByAkun[k])+'</td><td></td></tr>';
   });
   var totalHutang=Object.values(hutangByAkun).reduce(function(a,b){return a+b},0);
   var totalAll=totalKas+piutangVal;
@@ -2244,6 +2352,19 @@ document.addEventListener('DOMContentLoaded', function(){
     katSearch.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') finCloseKat(); });
   }
 
+  var akunBody = document.getElementById('akunTableBody');
+  if(akunBody){
+    akunBody.addEventListener('click', function(ev){
+      var tr = ev.target.closest ? ev.target.closest('tr.akun-row') : null;
+      if(tr) openAkunDetail(tr.getAttribute('data-akun'));
+    });
+  }
+  var akunMod = document.getElementById('akunModal');
+  if(akunMod){
+    akunMod.addEventListener('click', function(ev){ if(ev.target === akunMod) closeAkunDetail(); });
+  }
+  document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') closeAkunDetail(); });
+
   var trxWrap = document.getElementById('trxKatWrap');
   if(trxWrap){
     trxWrap.addEventListener('click', function(ev){ if(ev.target === trxWrap) trxCloseKat(); });
@@ -2380,17 +2501,6 @@ function renderTrxAll(){
   if(katVal && katVal !== 'all'){
     src = src.filter(function(t){ return trxKatName(t) === katVal; });
   }
-  var tf = document.getElementById('trxTransferFilter');
-  var dSel = document.getElementById('trxDari');
-  var kSel = document.getElementById('trxKe');
-  var isTransfer = (katVal === 'Transfer');
-  if(tf) tf.hidden = !isTransfer;
-  var dariVal = (isTransfer && dSel) ? dSel.value : 'all';
-  var keVal = (isTransfer && kSel) ? kSel.value : 'all';
-  if(isTransfer){
-    if(dariVal && dariVal !== 'all') src = src.filter(function(t){ return (t.akun || '') === dariVal; });
-    if(keVal && keVal !== 'all') src = src.filter(function(t){ return (t.tujuan || '') === keVal; });
-  }
   var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
     var jumlah = {masuk:0, keluar:0, transfer:0, piutang:0, hutang:0, opname:0};
   rows.forEach(function(t){
@@ -2423,12 +2533,7 @@ var info = document.getElementById('trxAllInfo');
     var sel = document.getElementById('filterBulan');
     var nm = 'Semua bulan';
     if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
-    var ket = '';
-    if(katVal !== 'all') ket += ' \u00b7 ' + katVal;
-    if(isTransfer && (dariVal !== 'all' || keVal !== 'all')){
-      ket += ' \u00b7 ' + (dariVal === 'all' ? 'Semua akun' : dariVal) + ' \u2192 ' + (keVal === 'all' ? 'Semua akun' : keVal);
-    }
-    info.textContent = rows.length + ' transaksi \u00b7 ' + nm + ket;
+    info.textContent = rows.length + ' transaksi \u00b7 ' + nm + (katVal !== 'all' ? ' \u00b7 ' + katVal : '');
   }
   var html = '';
   rows.forEach(function(t){
