@@ -1008,6 +1008,7 @@ td.num { font-weight: 800; }
   transition: transform .2s ease, width .2s ease, background .2s ease;
 }
 .fin-date {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1021,24 +1022,23 @@ td.num { font-weight: 800; }
   cursor: pointer;
 }
 .fin-date:focus-within { box-shadow: 0 0 0 3px rgba(14, 122, 79, .12); }
+.fin-date:focus-visible { outline: 2px solid var(--form-accent); outline-offset: 2px; }
+.fin-date-text { flex: 1; min-width: 0; color: var(--form-text); font: 700 13px var(--font); }
 .fin-date-icon { display: inline-flex; flex: none; color: var(--form-accent); }
-.fin-date-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fin-date-icon svg, .fin-date-chevron { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fin-date-chevron { width: 15px; height: 15px; flex: none; color: var(--form-muted); }
 .fin-date input {
-  flex: 1;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-width: 0;
   padding: 0;
   border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--form-text);
-  font: 700 13px var(--font);
+  opacity: 0;
   cursor: pointer;
   color-scheme: light;
   pointer-events: none;
 }
-.fin-date input::-webkit-calendar-picker-indicator { width: 22px; height: 22px; opacity: .7; cursor: pointer; }
 .fin-nom { display: flex; align-items: baseline; gap: 5px; padding: 2px 1px 0; }
 .fin-nom .rp { flex: none; color: var(--form-muted); font-size: 18px; font-weight: 700; }
 .fin-nom input {
@@ -1636,9 +1636,11 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         <button data-tipe="Piutang" role="tab" type="button">Piutang</button>
       </div>
       <div class="fin-label">Tanggal</div>
-      <div class="fin-date" onclick="finOpenDate(event)" title="Pilih tanggal">
+      <div class="fin-date" role="button" tabindex="0" aria-label="Pilih tanggal transaksi" onclick="finOpenDate(event)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();finOpenDate(event)}" title="Pilih tanggal">
         <span aria-hidden="true" class="fin-date-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg></span>
-        <input aria-label="Tanggal transaksi" id="fTanggal" type="date"/>
+        <span class="fin-date-text" id="fTanggalText">Pilih tanggal</span>
+        <svg class="fin-date-chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m7 9 5 5 5-5"></path></svg>
+        <input aria-label="Tanggal transaksi" id="fTanggal" type="date" tabindex="-1" aria-hidden="true"/>
       </div>
       <div class="fin-nom">
         <span class="rp">Rp</span>
@@ -3594,6 +3596,8 @@ function finTodayISO(){
 function finDateLbl(){
   var el = finEl('fTanggal');
   if(el && !el.value) el.value = finTodayISO();
+  var out = finEl('fTanggalText');
+  if(out) out.textContent = el && el.value ? dateDisplay(el.value) : 'Pilih tanggal';
 }
 function finOpenDate(ev){
   var el = finEl('fTanggal');
