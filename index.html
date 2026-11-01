@@ -280,6 +280,9 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 #akunModal td.num{text-align:right;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
 #akunModal tr.masuk td.num{color:#2E6B00}
 #akunModal tr.keluar td.num{color:#A3123B}
+#akunModal .ak-filter{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #e8e3f4;background:#fff}
+#akunModal .ak-filter label{font:800 10.5px 'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#5B6072}
+#akunModal .ak-filter select{flex:1;height:40px;border:2px solid #17131f;border-radius:12px;background:#fff;color:#14151A;font:700 13px 'DM Sans',sans-serif;padding:0 10px}
 #akunModal .ak-foot{padding:10px 16px 14px;border-top:2px solid #17131f;background:#fff}
 #akunModal .ak-foot button{width:100%;height:44px;border:2px solid #17131f;border-radius:12px;background:#C8FF4D;font:800 14px 'DM Sans',sans-serif;cursor:pointer}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
@@ -433,6 +436,12 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
     <div class="ak-head">
       <h4 id="akTitle">Akun</h4>
       <button type="button" class="ak-close" onclick="closeAkunDetail()" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="ak-filter">
+      <label for="akBulan">Bulan</label>
+      <select id="akBulan" aria-label="Filter bulan rincian akun" onchange="akunSetBulan()">
+        <option value="all">Semua bulan</option>
+      </select>
     </div>
     <div class="ak-sum" id="akSum"></div>
     <div class="ak-list" id="akList"></div>
@@ -952,37 +961,106 @@ function akunArah(t, name){
   return null;
 }
 
+var akunAktif = null;
+var akunItems = [];
+
+function akunBulanKey(t){
+  if(!t || !t.date) return '';
+  return String(t.date).substr(0, 7);
+}
+
+function akunBulanLabel(key){
+  if(!key) return 'Tanpa tanggal';
+  var p = String(key).split('-');
+  var bl = parseInt(p[1], 10);
+  return (bn[bl] || p[1]) + ' ' + p[0];
+}
+
 function openAkunDetail(name){
   var m = document.getElementById('akunModal');
   if(!m || !name) return;
-  var masuk = 0, keluar = 0, items = [];
+  akunAktif = name;
+  akunItems = [];
   (allTrx || []).forEach(function(t){
     var a = akunArah(t, name);
     if(!a) return;
-    if(a.delta > 0) masuk += a.delta; else keluar += (-a.delta);
-    items.push({t: t, delta: a.delta, jenis: a.jenis});
+    akunItems.push({t: t, delta: a.delta, jenis: a.jenis, bl: akunBulanKey(t)});
   });
-  items.sort(function(x, y){ return x.t.date > y.t.date ? -1 : x.t.date < y.t.date ? 1 : 0; });
+  akunItems.sort(function(x, y){
+    var dx = x.t.date || '', dy = y.t.date || '';
+    return dx > dy ? -1 : dx < dy ? 1 : 0;
+  });
+
+  var sel = document.getElementById('akBulan');
+  if(sel){
+    var prev = sel.value || 'all';
+    var keys = [], seen = {};
+    akunItems.forEach(function(x){
+      if(x.bl && !seen[x.bl]){ seen[x.bl] = 1; keys.push(x.bl); }
+    });
+    keys.sort(); keys.reverse();
+    sel.innerHTML = '<option value="all">Semua bulan</option>';
+    keys.forEach(function(k){
+      var o = document.createElement('option');
+      o.value = k;
+      o.textContent = akunBulanLabel(k);
+      sel.appendChild(o);
+    });
+    sel.value = (prev !== 'all' && seen[prev]) ? prev : 'all';
+  }
+
+  document.getElementById('akTitle').textContent = 'Akun: ' + name;
+  renderAkunDetail();
+  m.classList.add('open');
+}
+
+function akunSetBulan(){
+  renderAkunDetail();
+}
+
+function renderAkunDetail(){
+  var name = akunAktif;
+  if(!name) return;
+  var sel = document.getElementById('akBulan');
+  var bl = sel ? (sel.value || 'all') : 'all';
+
+  var masuk = 0, keluar = 0;
+  akunItems.forEach(function(x){
+    if(x.delta > 0) masuk += x.delta; else keluar += (-x.delta);
+  });
+
+  var list = akunItems.filter(function(x){ return bl === 'all' || x.bl === bl; });
+  var mBulan = 0, kBulan = 0;
+  list.forEach(function(x){
+    if(x.delta > 0) mBulan += x.delta; else kBulan += (-x.delta);
+  });
 
   var saldo = null;
   (opnameData || []).forEach(function(a){ if(a.name === name) saldo = a.actual; });
   if(saldo === null) saldo = masuk - keluar;
+  var saldoAwalAll = Math.round(saldo - (masuk - keluar));
 
-  document.getElementById('akTitle').textContent = 'Akun: ' + name;
-  var saldoAwal = Math.round(saldo - (masuk - keluar));
+  var sebelum = 0;
+  if(bl !== 'all'){
+    akunItems.forEach(function(x){ if(x.bl && x.bl < bl) sebelum += x.delta; });
+  }
+  var saldoAwal = (bl === 'all') ? saldoAwalAll : Math.round(saldoAwalAll + sebelum);
+  var saldoAkhir = Math.round(saldoAwal + (mBulan - kBulan));
+
   document.getElementById('akSum').innerHTML =
-      '<span class="ak-chip">' + items.length + ' transaksi</span>'
-    + '<span class="ak-chip masuk">Masuk +' + rp(masuk) + '</span>'
-    + '<span class="ak-chip keluar">Keluar \u2212' + rp(keluar) + '</span>'
+      '<span class="ak-chip">' + list.length + ' transaksi</span>'
+    + '<span class="ak-chip masuk">Masuk +' + rp(mBulan) + '</span>'
+    + '<span class="ak-chip keluar">Keluar \u2212' + rp(kBulan) + '</span>'
+    + '<span class="ak-chip">Netto ' + ((mBulan - kBulan) < 0 ? '\u2212' : '+') + rp(Math.abs(mBulan - kBulan)) + '</span>'
     + '<span class="ak-chip">Saldo awal ' + rp(saldoAwal) + '</span>'
-    + '<span class="ak-chip saldo">Saldo akhir ' + rp(saldo) + '</span>';
+    + '<span class="ak-chip saldo">Saldo akhir ' + rp(saldoAkhir) + '</span>';
 
   var html = '';
-  if(!items.length){
+  if(!list.length){
     html = '<div style="padding:18px;color:#5B6072">Tidak ada transaksi untuk akun ini.</div>';
   } else {
     html = '<table><thead><tr><th>Tgl</th><th>Keterangan</th><th class="num">Nominal</th></tr></thead><tbody>';
-    items.forEach(function(x){
+    list.forEach(function(x){
       var cls = x.delta > 0 ? 'masuk' : 'keluar';
       var sign = x.delta > 0 ? '+' : '\u2212';
       var sub = (x.t.tipe === 'Transfer' && (x.t.tujuan || ''))
@@ -996,7 +1074,11 @@ function openAkunDetail(name){
     html += '</tbody></table>';
   }
   document.getElementById('akList').innerHTML = html;
-  m.classList.add('open');
+}
+
+function closeAkunDetail(){
+  var m = document.getElementById('akunModal');
+  if(m) m.classList.remove('open');
 }
 
 function closeAkunDetail(){
