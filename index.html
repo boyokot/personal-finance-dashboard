@@ -239,6 +239,12 @@ body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .trx-filter label{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .trx-filter select{min-height:38px;max-width:100%;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 12px;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer;outline:none}
 .trx-filter select:focus{box-shadow:0 0 0 2px var(--lime)}
+.trx-katbtn{display:flex;align-items:center;gap:8px;min-height:38px;max-width:100%;border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--txt);padding:6px 14px;font:700 12.5px 'DM Sans',sans-serif;cursor:pointer}
+.trx-katbtn .arw{font-size:10px;color:var(--muted)}
+.trx-katbtn:active{transform:scale(.98)}
+.fin-kat-wrap.trx-kat-fix{position:fixed;inset:0;z-index:70}
+.trx-kat .item.cur{background:var(--lime)}
+.trx-kat .cnt{font-size:10.5px;color:var(--muted);font-weight:700}
 .setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
 #setEndpoint{display:block;width:100%;background:#f2f0fa;border:2px solid #17131f;border-radius:12px;padding:9px 11px;font-size:11px;line-height:1.45;word-break:break-all;font-family:ui-monospace,monospace}
 #setTema button.aktif{background:#C8FF4D}
@@ -377,6 +383,14 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
     </div>
   </div>
 </div>
+<div class="fin-kat-wrap trx-kat-fix" id="trxKatWrap">
+  <div class="fin-kat trx-kat" role="dialog" aria-modal="true" aria-label="Pilih kategori transaksi">
+    <div class="fin-handle"></div>
+    <h4>Pilih kategori</h4>
+    <div class="srch"><input class="fin-input" id="trxKatSearch" type="text" autocomplete="off" placeholder="Cari kategori..." aria-label="Cari kategori transaksi"></div>
+    <div class="list" id="trxKatList"></div>
+  </div>
+</div>
 <div class="loading" id="loadingDiv" role="status" aria-live="polite">Menyiapkan ringkasan keuangan...</div>
 <div id="dashboardContent" style="display:none">
 <section class="screen" data-screen="beranda" id="screen-beranda">
@@ -406,9 +420,21 @@ body[data-tema="coral"] .btnSave{background:#FF6B8A;color:#fff}
     <h3>Semua Transaksi</h3>
     <div class="sub" id="trxAllInfo" style="margin:0 0 10px">-</div>
     <div class="trx-filter">
-      <label for="trxKategori">Kategori</label>
-      <select id="trxKategori" aria-label="Filter kategori transaksi" onchange="renderTrxAll()">
-        <option value="all">Semua kategori</option>
+      <label>Kategori</label>
+      <button type="button" class="trx-katbtn" id="trxKatBtn" onclick="trxOpenKat()" aria-label="Pilih kategori transaksi">
+        <span id="trxKatLabel">Semua kategori</span>
+        <span class="arw" aria-hidden="true">&#9662;</span>
+      </button>
+      <input type="hidden" id="trxKategori" value="all">
+    </div>
+    <div class="trx-filter" id="trxTransferFilter" hidden>
+      <label for="trxDari">Dari akun</label>
+      <select id="trxDari" aria-label="Filter akun asal transfer" onchange="renderTrxAll()">
+        <option value="all">Semua akun</option>
+      </select>
+      <label for="trxKe">Ke akun</label>
+      <select id="trxKe" aria-label="Filter akun tujuan transfer" onchange="renderTrxAll()">
+        <option value="all">Semua akun</option>
       </select>
     </div>
         <div class="trx-total" id="trxTotal" aria-live="polite"></div>
@@ -795,25 +821,105 @@ function trxKatName(t){
   return String((t && t.kat) || '').trim() || 'Tanpa Kategori';
 }
 
-function buildTrxKatOpts(){
-  var sel = document.getElementById('trxKategori');
-  if(!sel) return;
-  var prev = sel.value || 'all';
-  var set = {};
-  (allTrx || []).forEach(function(t){ set[trxKatName(t)] = true; });
-  var keys = Object.keys(set).sort(function(a,b){ return a.localeCompare(b, 'id'); });
-  sel.innerHTML = '';
-  var optAll = document.createElement('option');
-  optAll.value = 'all';
-  optAll.textContent = 'Semua kategori';
-  sel.appendChild(optAll);
-  keys.forEach(function(k){
-    var o = document.createElement('option');
-    o.value = k;
-    o.textContent = k;
-    sel.appendChild(o);
+function trxKatCounts(){
+  var cnt = {};
+  (allTrx || []).forEach(function(t){
+    var k = trxKatName(t);
+    cnt[k] = (cnt[k] || 0) + 1;
   });
-  sel.value = (prev !== 'all' && set[prev]) ? prev : 'all';
+  return cnt;
+}
+
+function buildTrxKatOpts(){
+  var hid = document.getElementById('trxKategori');
+  if(!hid) return;
+  var prev = hid.value || 'all';
+  var cnt = trxKatCounts();
+  if(prev !== 'all' && !cnt[prev]) prev = 'all';
+  hid.value = prev;
+  var lbl = document.getElementById('trxKatLabel');
+  if(lbl) lbl.textContent = prev === 'all' ? 'Semua kategori' : prev;
+  buildTrxAkunOpts();
+  renderTrxKatList('');
+}
+
+function buildTrxAkunOpts(){
+  var dSel = document.getElementById('trxDari');
+  var kSel = document.getElementById('trxKe');
+  if(!dSel || !kSel) return;
+  var dari = {}, ke = {};
+  (allTrx || []).forEach(function(t){
+    if(t.tipe !== 'Transfer') return;
+    if(t.akun) dari[t.akun] = true;
+    if(t.tujuan) ke[t.tujuan] = true;
+  });
+  function isi(sel, set, teksSemua){
+    var prev = sel.value || 'all';
+    var keys = Object.keys(set).sort(function(a,b){ return a.localeCompare(b, 'id'); });
+    sel.innerHTML = '';
+    var o0 = document.createElement('option');
+    o0.value = 'all';
+    o0.textContent = teksSemua;
+    sel.appendChild(o0);
+    keys.forEach(function(k){
+      var o = document.createElement('option');
+      o.value = k;
+      o.textContent = k;
+      sel.appendChild(o);
+    });
+    sel.value = (prev !== 'all' && set[prev]) ? prev : 'all';
+  }
+  isi(dSel, dari, 'Semua akun');
+  isi(kSel, ke, 'Semua akun');
+}
+
+function trxOpenKat(){
+  var w = document.getElementById('trxKatWrap');
+  if(!w) return;
+  var srch = document.getElementById('trxKatSearch');
+  if(srch) srch.value = '';
+  renderTrxKatList('');
+  w.classList.add('open');
+}
+
+function trxCloseKat(){
+  var w = document.getElementById('trxKatWrap');
+  if(w) w.classList.remove('open');
+}
+
+function trxSetKat(k){
+  var hid = document.getElementById('trxKategori');
+  if(hid) hid.value = k || 'all';
+  var lbl = document.getElementById('trxKatLabel');
+  if(lbl) lbl.textContent = (!k || k === 'all') ? 'Semua kategori' : k;
+  trxCloseKat();
+  renderTrxAll();
+}
+
+function renderTrxKatList(q){
+  var box = document.getElementById('trxKatList');
+  if(!box) return;
+  var cnt = trxKatCounts();
+  var cur = (document.getElementById('trxKategori') || {}).value || 'all';
+  var qn = String(q || '').toLowerCase().trim();
+  var keys = Object.keys(cnt).sort(function(a,b){ return a.localeCompare(b, 'id'); });
+  if(qn) keys = keys.filter(function(k){ return k.toLowerCase().indexOf(qn) >= 0; });
+
+  function row(k, jumlah, aktif){
+    return '<button type="button" class="item' + (aktif ? ' cur' : '') + '" data-kat="' + escAttr(k) + '">'
+      + '<span>' + escAttr(k) + (aktif ? ' &#10003;' : '') + '</span>'
+      + '<span class="cnt">' + (jumlah ? jumlah + 'x' : '') + '</span></button>';
+  }
+  var html = '';
+  if(!qn){
+    html += '<div class="grp">Pilihan</div>';
+    html += '<button type="button" class="item' + (cur === 'all' ? ' cur' : '') + '" data-kat="all"><span>Semua kategori'
+      + (cur === 'all' ? ' &#10003;' : '') + '</span><span class="cnt">' + (allTrx || []).length + 'x</span></button>';
+  }
+  html += '<div class="grp">' + (qn ? 'Hasil' : 'Semua kategori (A\u2013Z)') + '</div>';
+  html += keys.length ? keys.map(function(k){ return row(k, cnt[k], cur === k); }).join('')
+                      : '<div class="item">Tidak ada kategori cocok</div>';
+  box.innerHTML = html;
 }
 
 function getAnggaranLabels(){ return currentTier===1?anggaranT1.map(function(a){return a.kat}):anggaranT2.map(function(a){return a.kat}); }
@@ -2138,6 +2244,19 @@ document.addEventListener('DOMContentLoaded', function(){
     katSearch.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') finCloseKat(); });
   }
 
+  var trxWrap = document.getElementById('trxKatWrap');
+  if(trxWrap){
+    trxWrap.addEventListener('click', function(ev){ if(ev.target === trxWrap) trxCloseKat(); });
+    trxWrap.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('button[data-kat]') : null;
+      if(b) trxSetKat(b.getAttribute('data-kat'));
+    });
+  }
+  var trxSearch = document.getElementById('trxKatSearch');
+  if(trxSearch){
+    trxSearch.addEventListener('input', function(){ renderTrxKatList(this.value); });
+  }
+
   var katWrap = finEl('katWrap');
   if(katWrap) katWrap.addEventListener('click', function(ev){ if(ev.target === katWrap) finCloseKat(); });
 
@@ -2261,6 +2380,17 @@ function renderTrxAll(){
   if(katVal && katVal !== 'all'){
     src = src.filter(function(t){ return trxKatName(t) === katVal; });
   }
+  var tf = document.getElementById('trxTransferFilter');
+  var dSel = document.getElementById('trxDari');
+  var kSel = document.getElementById('trxKe');
+  var isTransfer = (katVal === 'Transfer');
+  if(tf) tf.hidden = !isTransfer;
+  var dariVal = (isTransfer && dSel) ? dSel.value : 'all';
+  var keVal = (isTransfer && kSel) ? kSel.value : 'all';
+  if(isTransfer){
+    if(dariVal && dariVal !== 'all') src = src.filter(function(t){ return (t.akun || '') === dariVal; });
+    if(keVal && keVal !== 'all') src = src.filter(function(t){ return (t.tujuan || '') === keVal; });
+  }
   var rows = src.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; });
     var jumlah = {masuk:0, keluar:0, transfer:0, piutang:0, hutang:0, opname:0};
   rows.forEach(function(t){
@@ -2293,7 +2423,12 @@ var info = document.getElementById('trxAllInfo');
     var sel = document.getElementById('filterBulan');
     var nm = 'Semua bulan';
     if(sel && sel.value !== 'all' && sel.options[sel.selectedIndex]) nm = sel.options[sel.selectedIndex].text;
-    info.textContent = rows.length + ' transaksi \u00b7 ' + nm + (katVal !== 'all' ? ' \u00b7 ' + katVal : '');
+    var ket = '';
+    if(katVal !== 'all') ket += ' \u00b7 ' + katVal;
+    if(isTransfer && (dariVal !== 'all' || keVal !== 'all')){
+      ket += ' \u00b7 ' + (dariVal === 'all' ? 'Semua akun' : dariVal) + ' \u2192 ' + (keVal === 'all' ? 'Semua akun' : keVal);
+    }
+    info.textContent = rows.length + ' transaksi \u00b7 ' + nm + ket;
   }
   var html = '';
   rows.forEach(function(t){
