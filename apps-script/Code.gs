@@ -2,14 +2,19 @@
  * Penulis Keuangan Pribadi versi Google Apps Script (tanpa server HP).
  *
  * Keamanan:
- * - PIN_HASH dan PIN_SALT wajib disimpan di Script Properties, bukan di source.
+ * - PIN_HASH dan PIN_SALT disimpan di Script Properties, bukan di source.
+ * - Setup PIN pertama memakai SETUP_TOKEN sementara di Script Properties;
+ *   token dihapus otomatis setelah PIN berhasil dibuat.
  * - Login hanya lewat POST /exec {action:"login", pin:"..."}.
  * - Semua baca/tulis data memakai token sesi. PIN tidak pernah dikirim di URL.
+ * - Ubah PIN lewat POST /exec {action:"change-pin", ...}; semua sesi lama dicabut.
  * - File bukti disimpan privat di Drive; tidak lagi dibagikan ANYONE_WITH_LINK.
  *
- * Konfigurasi Script Properties yang diperlukan:
- *   PIN_HASH  = SHA-256(PIN + "|" + PIN_SALT), 64 karakter hex
- *   PIN_SALT  = salt acak
+ * Konfigurasi Script Properties:
+ *   SETUP_TOKEN  = kode setup sementara (minimal 20 karakter; dihapus saat setup)
+ *   PIN_HASH     = SHA-256(PIN + "|" + PIN_SALT), 64 karakter hex (dibuat saat setup)
+ *   PIN_SALT     = salt acak (dibuat saat setup)
+ *   AUTH_VERSION = versi sesi acak (dibuat saat setup; berubah saat ganti PIN)
  * Opsional:
  *   SHEET_ID     = ID spreadsheet (default di bawah)
  *   DRIVE_FOLDER = nama folder bukti (default "Bukti Keuangan Pribadi")
@@ -31,6 +36,8 @@ var VALID_TIPE = ['Pemasukan', 'Pengeluaran', 'Transfer', 'Piutang', 'Hutang', '
 var SESSION_TTL_SECONDS = 21600; // 6 jam; batas maksimum CacheService
 var LOGIN_WINDOW_SECONDS = 900;
 var MAX_LOGIN_FAILS = 5;
+var MAX_SETUP_FAILS = 5;
+var MIN_SETUP_TOKEN_LENGTH = 20;
 
 /* ======================= ROUTER ======================= */
 
@@ -44,6 +51,7 @@ function doGet(e) {
         service: 'keuangan-pribadi',
         mode: 'apps-script',
         configured: !!pinConfig_(),
+        setup: !pinConfig_() && !!setupToken_(),
         time: nowStr()
       });
     }
@@ -71,6 +79,7 @@ function doPost(e) {
     }
 
     var action = String(b.action || '').replace(/^\//, '');
+    if (action === 'setup') return setupPin_(b);
     if (action === 'login') return login_(b);
     if (action === 'logout') {
       if (sessionOk_(b.token)) CacheService.getScriptCache().remove(sessionKey_(b.token));
@@ -80,6 +89,8 @@ function doPost(e) {
     if (!sessionOk_(b.token)) {
       return out({ ok: false, code: 401, error: 'Sesi tidak valid atau sudah berakhir. Silakan login ulang.' });
     }
+
+    if (action === 'change-pin') return changePin_(b);
 
     if (action === 'data') {
       var data = readAll_();
@@ -136,15 +147,109 @@ function login_(b) {
   }
 
   clearLoginFail_();
-  var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
-  var expiresAt = Date.now() + SESSION_TTL_SECONDS * 1000;
-  CacheService.getScriptCache().put(sessionKey_(token), String(expiresAt), SESSION_TTL_SECONDS);
+  var session = issueSession_();
   return out({
     ok: true,
-    token: token,
-    expiresAt: expiresAt,
-    expiresIn: SESSION_TTL_SECONDS
+    token: session.token,
+    expiresAt: session.expiresAt,
+    expiresIn: session.expiresIn
   });
+}
+
+function issueSession_() {
+  var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var expiresAt = Date.now() + SESSION_TTL_SECONDS * 1000;
+  CacheService.getScriptCache().put(
+    sessionKey_(token),
+    String(expiresAt) + '|' + authVersion_(),
+    SESSION_TTL_SECONDS
+  );
+  return { token: token, expiresAt: expiresAt, expiresIn: SESSION_TTL_SECONDS };
+}
+
+function setupPin_(b) {
+  if (pinConfig_()) {
+    return out({ ok: false, code: 409, error: 'PIN sudah dikonfigurasi. Silakan login.' });
+  }
+  var setupToken = setupToken_();
+  if (!setupToken) {
+    return out({ ok: false, code: 503, error: 'Setup PIN belum diaktifkan. Tambahkan SETUP_TOKEN di Script Properties atau jalankan BUAT_KODE_SETUP().' });
+  }
+  if (setupLocked_()) {
+    return out({ ok: false, code: 429, error: 'Terlalu banyak percobaan setup. Coba lagi dalam 15 menit.' });
+  }
+
+  var code = String(b.setupCode || '').trim();
+  if (!code || code !== setupToken) {
+    recordSetupFail_();
+    return out({ ok: false, code: 403, error: 'Kode setup salah' });
+  }
+
+  var pin = String(b.pin || '');
+  var confirm = String(b.pinConfirm || '');
+  if (!/^\d{6}$/.test(pin)) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus 6 angka.' });
+  }
+  if (pin !== confirm) {
+    return out({ ok: false, code: 400, error: 'Konfirmasi PIN tidak sama.' });
+  }
+
+  var salt = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var session = withLock_(function () {
+    if (pinConfig_() || setupToken_() !== setupToken) return null;
+    PropertiesService.getScriptProperties().setProperties({
+      PIN_SALT: salt,
+      PIN_HASH: h(pin + '|' + salt),
+      AUTH_VERSION: newAuthVersion_()
+    });
+    PropertiesService.getScriptProperties().deleteProperty('SETUP_TOKEN');
+    return issueSession_();
+  });
+  if (!session) {
+    return out({ ok: false, code: 409, error: 'PIN sudah dikonfigurasi. Silakan login.' });
+  }
+  clearSetupFail_();
+  return out({
+    ok: true,
+    token: session.token,
+    expiresAt: session.expiresAt,
+    expiresIn: session.expiresIn
+  });
+}
+
+function changePin_(b) {
+  if (loginLocked_()) {
+    return out({ ok: false, code: 429, error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.' });
+  }
+  var current = String(b.pin || '');
+  if (!pinOk(current)) {
+    recordLoginFail_();
+    return out({ ok: false, code: 403, error: 'PIN sekarang salah' });
+  }
+  var next = String(b.newPin || '');
+  var confirm = String(b.pinConfirm || '');
+  if (!/^\d{6}$/.test(next)) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus 6 angka.' });
+  }
+  if (next !== confirm) {
+    return out({ ok: false, code: 400, error: 'Konfirmasi PIN baru tidak sama.' });
+  }
+  if (next === current) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus berbeda dari PIN sekarang.' });
+  }
+
+  var salt = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var version = newAuthVersion_();
+  withLock_(function () {
+    PropertiesService.getScriptProperties().setProperties({
+      PIN_SALT: salt,
+      PIN_HASH: h(next + '|' + salt),
+      AUTH_VERSION: version
+    });
+  });
+  clearLoginFail_();
+  CacheService.getScriptCache().remove(sessionKey_(b.token));
+  return out({ ok: true, relogin: true });
 }
 
 function sessionKey_(token) {
@@ -157,8 +262,9 @@ function sessionOk_(token) {
   var cache = CacheService.getScriptCache();
   var raw = cache.get(sessionKey_(token));
   if (!raw) return false;
-  var exp = Number(raw);
-  if (!exp || Date.now() >= exp) {
+  var parts = String(raw).split('|');
+  var exp = Number(parts[0]);
+  if (!exp || Date.now() >= exp || String(parts[1] || '') !== authVersion_()) {
     cache.remove(sessionKey_(token));
     return false;
   }
@@ -183,6 +289,26 @@ function clearLoginFail_() {
   var cache = CacheService.getScriptCache();
   cache.remove('login_fail_v1');
   cache.remove('login_lock_v1');
+}
+
+function setupLocked_() {
+  return !!CacheService.getScriptCache().get('setup_lock_v1');
+}
+
+function recordSetupFail_() {
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get('setup_fail_v1') || 0) + 1;
+  cache.put('setup_fail_v1', String(n), LOGIN_WINDOW_SECONDS);
+  if (n >= MAX_SETUP_FAILS) {
+    cache.put('setup_lock_v1', '1', LOGIN_WINDOW_SECONDS);
+    cache.remove('setup_fail_v1');
+  }
+}
+
+function clearSetupFail_() {
+  var cache = CacheService.getScriptCache();
+  cache.remove('setup_fail_v1');
+  cache.remove('setup_lock_v1');
 }
 
 /* ======================= BACA DATA ======================= */
@@ -618,6 +744,39 @@ function pinConfig_() {
   var salt = String(prop_('PIN_SALT', '') || '');
   if (!/^[a-f0-9]{64}$/.test(hash) || !salt) return null;
   return { hash: hash, salt: salt };
+}
+
+function authVersion_() {
+  return String(prop_('AUTH_VERSION', '1'));
+}
+
+function newAuthVersion_() {
+  return Utilities.getUuid().replace(/-/g, '');
+}
+
+function setupToken_() {
+  var token = String(prop_('SETUP_TOKEN', '') || '').trim();
+  if (token.length < MIN_SETUP_TOKEN_LENGTH) return '';
+  return token;
+}
+
+/**
+ * Jalankan sekali dari editor Apps Script untuk membuat kode setup acak.
+ * Kode hanya ditampilkan di dialog editor dan disimpan di Script Properties,
+ * tidak ditulis ke log atau dikirim ke chat.
+ */
+function BUAT_KODE_SETUP() {
+  var code = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('SETUP_TOKEN', code);
+  try {
+    Browser.msgBox(
+      'Kode setup PIN',
+      'Masukkan kode ini di dashboard pada menu "Pertama kali? Buat PIN":\n\n' + code + '\n\nJangan bagikan kode ini. Setelah PIN dibuat, kode otomatis dihapus.',
+      Browser.Buttons.OK
+    );
+  } catch (e) {
+    Logger.log('SETUP_TOKEN sudah dibuat. Buka Project Settings > Script Properties untuk menyalin nilainya.');
+  }
 }
 
 function pinOk(pin) {
