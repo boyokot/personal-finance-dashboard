@@ -54,23 +54,48 @@
     <div class="card rule"><strong>3. Transfer bukan spending</strong><span class="sub">Transfer antar akun tidak dihitung pengeluaran, tapi tetap jaga saldo Tunai minimum.</span></div>
   </div>
 
-  <div class="footer" id="footer">Live dari Google Sheets · halaman otomatis hitung saat dibuka</div>
+  <div class="footer" id="footer">Data privat Apps Script · memerlukan sesi login</div>
 </div>
 <script>
-const PUBKEY='2PACX-1vTyARHOgpAo3jDKfLXKhbU36kvJPXCR19TWS5IdVB0T-BWSH4U5g_-LqgMog7xn7YTm87lpXQyMAuNC';
-const GIDS={transaksi:'158794767',anggaran:'66736449'};
+const SESSION_KEY='fin_session_v2';
+const ENDPOINT_LS='fin_endpoint_v1';
+const ENDPOINT_RAW='https://raw.githubusercontent.com/boyokot/personal-finance-dashboard/main/endpoint.txt';
 const TZ='Asia/Jakarta';
+let FIN_ENDPOINT='';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function rp(v){return 'Rp '+new Intl.NumberFormat('id-ID').format(Math.round(Number(v)||0));}
 function num(x){if(x==null||x==='')return 0;if(typeof x==='number')return x;return Number(String(x).replace(/Rp|\s|\./g,'').replace(',','.'))||0;}
-function parseCSV(text){let rows=[],row=[],cur='',q=false;for(let i=0;i<text.length;i++){let ch=text[i],nx=text[i+1];if(ch==='"'){if(q&&nx==='"'){cur+='"';i++;}else q=!q;}else if(ch===','&&!q){row.push(cur.trim());cur='';}else if((ch==='\n'||ch==='\r')&&!q){if(ch==='\r'&&nx==='\n')i++;row.push(cur.trim());rows.push(row);row=[];cur='';}else cur+=ch;}if(cur.length||row.length){row.push(cur.trim());rows.push(row);}return rows.filter(r=>r.join('').trim());}
-async function fetchCSV(gid){let u='https://docs.google.com/spreadsheets/d/e/'+PUBKEY+'/pub?gid='+gid+'&single=true&output=csv&_ts='+Date.now();let r=await fetch(u,{cache:'no-store'});return parseCSV(await r.text());}
 function parseDate(s){if(!s)return null;s=String(s).trim();if(/^\d+(\.\d+)?$/.test(s)){let d=new Date(Date.UTC(1899,11,30));d.setUTCDate(d.getUTCDate()+Math.round(parseFloat(s)));return d;}let bm={Jan:0,Feb:1,Mar:2,Apr:3,Mei:4,May:4,Jun:5,Jul:6,Agu:7,Aug:7,Sep:8,Okt:9,Oct:9,Nov:10,Des:11,Dec:11};let p=s.split(' ');if(p.length===3&&bm[p[1]]!=null)return new Date(Date.UTC(Number(p[2]),bm[p[1]],Number(p[0])));let md=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(md)return new Date(Date.UTC(Number(md[3]),Number(md[2])-1,Number(md[1])));let d=new Date(s);return isNaN(d.getTime())?null:d;}
 function jakartaToday(){let p={};new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).forEach(x=>{if(x.type!=='literal')p[x.type]=x.value;});return {y:Number(p.year),m:Number(p.month)-1,d:Number(p.day)};}
 function monthName(y,m){return new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m,1)));}
 function statusFor(rem,budget,used,weekly){if(!budget)return ['Tanpa anggaran','tight','Tambahkan anggaran untuk kategori ini.'];let pct=budget?used/budget:0;if(rem<=0)return ['STOP','stop','Stop, sudah lewat anggaran.'];if(pct>=.85||weekly<10000)return ['Ketat','tight','Belanja hanya kebutuhan wajib.'];return ['Aman','safe','Boleh, tetap catat dan jangan habiskan sekaligus.'];}
+function normalizeEndpoint(v){v=String(v||'').replace(/\s+/g,'');if(!v)return '';if(/script\.google\.com/.test(v)){let i=v.indexOf('/exec');return i>0?v.slice(0,i+5):'';}if(v.indexOf('https://')!==0&&!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//.test(v))return '';return v.replace(/\/+$/,'');}
+function sessionToken(){try{let raw=sessionStorage.getItem(SESSION_KEY);if(!raw)return '';let s=JSON.parse(raw);if(!s||!s.token)return '';if(s.exp&&Date.now()>=Number(s.exp)){sessionStorage.removeItem(SESSION_KEY);return '';}return String(s.token);}catch(e){return '';}}
+async function pingEndpoint(u){try{let r=await fetch(u+(u.indexOf('?')>=0?'&':'?')+'action=ping',{cache:'no-store'});if(!r.ok)return false;let j=await r.json();return !!(j&&j.ok);}catch(e){return false;}}
+async function loadEndpoint(){
+  let candidates=[];
+  function add(v){v=normalizeEndpoint(v);if(v&&!candidates.includes(v))candidates.push(v);}
+  try{add(localStorage.getItem(ENDPOINT_LS));}catch(e){}
+  for(const u of [ENDPOINT_RAW,'endpoint.txt','https://boyokot.github.io/personal-finance-dashboard/endpoint.txt']){
+    try{let r=await fetch(u+'?_='+Date.now(),{cache:'no-store'});if(r.ok)add(await r.text());}catch(e){}
+  }
+  for(const u of candidates){if(await pingEndpoint(u)){FIN_ENDPOINT=u;try{localStorage.setItem(ENDPOINT_LS,u);}catch(e){}return u;}}
+  return '';
+}
+async function fetchData(token){
+  let endpoint=await loadEndpoint();
+  if(!endpoint)throw new Error('Alamat data Apps Script belum termuat.');
+  let r=await fetch(endpoint,{method:'POST',cache:'no-store',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'data',token})});
+  let j=await r.json();
+  if(!j||!j.ok)throw new Error((j&&j.error)||'Data privat gagal dimuat. Buka dashboard utama untuk login.');
+  if(!Array.isArray(j.trx)||!Array.isArray(j.anggaran))throw new Error('Format data server tidak lengkap.');
+  return j;
+}
 async function main(){
-  const [trxRows,angRows]=await Promise.all([fetchCSV(GIDS.transaksi),fetchCSV(GIDS.anggaran)]);
+  const token=sessionToken();
+  if(!token)throw new Error('Sesi tidak ditemukan. Buka dashboard utama lalu login dengan PIN.');
+  const live=await fetchData(token);
+  const trxRows=live.trx, angRows=live.anggaran;
   const now=jakartaToday(), y=now.y, m=now.m;
   const trx=trxRows.slice(1).map(r=>({date:parseDate(r[0]),cat:String(r[2]||'').trim(),type:r[3],nom:num(r[4])})).filter(t=>t.date);
   const daysInMonth=new Date(Date.UTC(y,m+1,0)).getUTCDate();
@@ -78,7 +103,7 @@ async function main(){
   const ang={};
   angRows.slice(1).forEach(r=>{let cat=String(r[0]||'').trim();if(cat)ang[cat]=num(r[1]);});
   const used={};
-  trx.forEach(t=>{if(t.date.getUTCFullYear()===y&&t.date.getUTCMonth()===m&&t.type==='Pengeluaran'&&t.cat)used[t.cat]=(used[t.cat]||0)+t.nom;});
+  trx.forEach(t=>{if(t.date.getUTCFullYear()===y&&t.date.getUTCMonth()===m&&t.type==='Pengeluaran'&&t.cat&&!/opname|koreksi|transfer|hutang/i.test(t.cat))used[t.cat]=(used[t.cat]||0)+t.nom;});
   const categoryList=[];
   Object.keys(ang).forEach(cat=>{if(!categoryList.includes(cat))categoryList.push(cat);});
   trx.forEach(t=>{if(t.cat&&!categoryList.includes(t.cat))categoryList.push(t.cat);});
@@ -97,9 +122,9 @@ async function main(){
   document.getElementById('priorityTitle').textContent=priority?priority.cat:'Belum ada kategori';
   document.getElementById('priorityText').textContent=priority?(priority.budget?('Terpakai '+Math.round(priority.pct*100)+'% dari anggaran. '):'Pengeluaran tanpa anggaran. ')+priority.st[2]:'Tambahkan kategori anggaran atau catat pengeluaran terlebih dahulu.';
   document.getElementById('rows').innerHTML=rows.length?rows.map(r=>`<tr><td><strong>${esc(r.cat)}</strong><div class="bar"><div class="fill ${r.pct>=.85?'bad':r.pct>=.7?'warn':''}" style="width:${Math.min(100,r.pct*100)}%"></div></div></td><td class="num">${rp(r.budget)}</td><td class="num">${rp(r.u)}</td><td class="num">${rp(r.rem)}</td><td class="num"><strong>${rp(r.weekly)}</strong></td><td><span class="pill ${r.st[1]}">${esc(r.st[0])}</span></td><td>${esc(r.st[2])}</td></tr>`).join(''):'<tr><td colspan="7">Belum ada kategori anggaran atau pengeluaran bulan ini.</td></tr>';
-  document.getElementById('footer').textContent='Live dari Google Sheets · diperbarui '+new Date().toLocaleString('id-ID');
+  document.getElementById('footer').textContent='Data privat Apps Script · diperbarui '+new Date().toLocaleString('id-ID');
 }
-main().catch(e=>{document.getElementById('rows').innerHTML='<tr><td colspan="7">Gagal memuat: '+esc(e.message)+'</td></tr>';console.error(e);});
+main().catch(e=>{document.getElementById('rows').innerHTML='<tr><td colspan="7">Gagal memuat: '+esc(e.message)+'</td></tr>';document.getElementById('subtitle').textContent='Data tidak dapat dibuka tanpa sesi login.';console.error(e);});
 </script>
 </body>
 </html>
