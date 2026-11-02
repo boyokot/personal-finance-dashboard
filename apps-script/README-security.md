@@ -67,6 +67,11 @@ frontend baru tidak bisa membaca backend lama.
 7. Jika URL `/exec` berubah, perbarui `endpoint.txt` dan `latest.html` bila
    diperlukan.
 
+> Jika dulu pernah dipakai tunnel `finance-writer`/`trycloudflare`, hentikan
+> watchdog-nya sementara sebelum merge. Watchdog tersebut dapat menimpa
+> `endpoint.txt` dan mengarahkan dashboard ke server lama. Pastikan
+> `endpoint.txt` berisi URL `/exec` Apps Script yang baru.
+
 ## 3. Buat PIN pertama dari dashboard
 
 1. Buka halaman login dashboard versi baru.
