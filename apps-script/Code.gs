@@ -1,24 +1,43 @@
 /**
  * Penulis Keuangan Pribadi versi Google Apps Script (tanpa server HP).
  *
- * Cara panggil (dipakai dashboard):
- *   GET  .../exec?action=ping
- *   GET  .../exec?action=list&n=300&pin=xxxxxx
- *   GET  .../exec?action=anggaran
- *   POST .../exec   body JSON { action, pin, ... }
- *        action = add | update | delete | anggaran/save | anggaran/delete
+ * Keamanan:
+ * - PIN_HASH dan PIN_SALT disimpan di Script Properties, bukan di source.
+ * - Setup PIN pertama memakai SETUP_TOKEN sementara di Script Properties;
+ *   token dihapus otomatis setelah PIN berhasil dibuat.
+ * - Login hanya lewat POST /exec {action:"login", pin:"..."}.
+ * - Semua baca/tulis data memakai token sesi. PIN tidak pernah dikirim di URL.
+ * - Ubah PIN lewat POST /exec {action:"change-pin", ...}; semua sesi lama dicabut.
+ * - File bukti disimpan privat di Drive; tidak lagi dibagikan ANYONE_WITH_LINK.
  *
- * Semua aksi tulis wajib PIN (SHA-256 + SALT), sama seperti server.py.
+ * Konfigurasi Script Properties:
+ *   SETUP_TOKEN  = kode setup sementara (minimal 20 karakter; dihapus saat setup)
+ *   PIN_HASH     = SHA-256(PIN + "|" + PIN_SALT), 64 karakter hex (dibuat saat setup)
+ *   PIN_SALT     = salt acak (dibuat saat setup)
+ *   AUTH_VERSION = versi sesi acak (dibuat saat setup; berubah saat ganti PIN)
+ * Opsional:
+ *   SHEET_ID     = ID spreadsheet (default di bawah)
+ *   DRIVE_FOLDER = nama folder bukti (default "Bukti Keuangan Pribadi")
+ *
+ * Timezone spreadsheet/script sebaiknya Asia/Jakarta.
  */
 
-var SHEET_ID = '1JJKxdmyq-dbochsEUEo8-zqE7rzXihU6fj-7sLgCNKE';
+var DEFAULT_SHEET_ID = '1JJKxdmyq-dbochsEUEo8-zqE7rzXihU6fj-7sLgCNKE';
 var TAB = 'Transaksi';
 var TAB_ANG = 'Anggaran';
-var PIN_HASH = '389b3cd1d341d7bb027f06db3f3db28200de4e2933820e75de3aa1326d023629';
-var SALT = 'pf-dashboard-2026';
-var FOLDER = 'Bukti Keuangan Pribadi';
+var TAB_OPNAME = 'Opname';
+var TAB_TABUNGAN = 'Target Tabungan';
+var TZ = 'Asia/Jakarta';
+var FOLDER_DEFAULT = 'Bukti Keuangan Pribadi';
 var HDR_H = 'Akun Tujuan / Pihak';
+var HDR_ID = 'ID';
+var HDR_REQ = 'Request ID';
 var VALID_TIPE = ['Pemasukan', 'Pengeluaran', 'Transfer', 'Piutang', 'Hutang', 'Opname/Koreksi'];
+var SESSION_TTL_SECONDS = 21600; // 6 jam; batas maksimum CacheService
+var LOGIN_WINDOW_SECONDS = 900;
+var MAX_LOGIN_FAILS = 5;
+var MAX_SETUP_FAILS = 5;
+var MIN_SETUP_TOKEN_LENGTH = 20;
 
 /* ======================= ROUTER ======================= */
 
@@ -27,135 +46,307 @@ function doGet(e) {
   var action = String(p.action || 'ping').replace(/^\//, '');
   try {
     if (action === 'ping' || action === '') {
-      return out({ ok: true, service: 'keuangan-pribadi', mode: 'apps-script', time: nowStr() });
+      return out({
+        ok: true,
+        service: 'keuangan-pribadi',
+        mode: 'apps-script',
+        configured: !!pinConfig_(),
+        setup: !pinConfig_() && !!setupToken_(),
+        time: nowStr()
+      });
     }
-    if (!pinOk(p.pin)) return out({ ok: false, code: 403, error: 'PIN salah' });
-    if (action === 'list') return out({ ok: true, items: listRows(p.n) });
-    if (action === 'anggaran') return out({ ok: true, items: readAnggaran() });
-    return out({ ok: false, error: 'action tidak dikenal: ' + action });
+    return out({
+      ok: false,
+      code: 405,
+      error: 'Akses data hanya melalui POST terautentikasi.'
+    });
   } catch (err) {
-    return out({ ok: false, error: msg(err) });
+    return out({ ok: false, code: 500, error: msg(err) });
   }
 }
 
 function doPost(e) {
   try {
     var raw = (e && e.postData && e.postData.contents) || '{}';
-    var b = JSON.parse(raw);
-    if (!pinOk(b.pin)) return out({ ok: false, code: 403, error: 'PIN salah' });
+    var b;
+    try {
+      b = JSON.parse(raw);
+    } catch (parseErr) {
+      return out({ ok: false, code: 400, error: 'Body JSON tidak valid.' });
+    }
+    if (!b || typeof b !== 'object') {
+      return out({ ok: false, code: 400, error: 'Body JSON tidak valid.' });
+    }
 
-    var action = String(b.action || 'add').replace(/^\//, '');
+    var action = String(b.action || '').replace(/^\//, '');
+    if (action === 'setup') return setupPin_(b);
+    if (action === 'login') return login_(b);
+    if (action === 'logout') {
+      if (sessionOk_(b.token)) CacheService.getScriptCache().remove(sessionKey_(b.token));
+      return out({ ok: true });
+    }
+
+    if (!sessionOk_(b.token)) {
+      return out({ ok: false, code: 401, error: 'Sesi tidak valid atau sudah berakhir. Silakan login ulang.' });
+    }
+
+    if (action === 'change-pin') return changePin_(b);
+
+    if (action === 'data') {
+      var data = readAll_();
+      data.ok = true;
+      data.time = nowStr();
+      return out(data);
+    }
+    if (action === 'list') {
+      return out({ ok: true, items: listRows(b.n) });
+    }
+    if (action === 'anggaran') {
+      return out({ ok: true, items: readAnggaran() });
+    }
+
+    // Seluruh aksi tulis tetap memerlukan PIN, di samping token sesi.
+    if (!pinOk(b.pin)) return out({ ok: false, code: 403, error: 'PIN salah' });
 
     if (action === 'add') return actAdd(b);
     if (action === 'update') return actUpdate(b);
     if (action === 'delete') return actDelete(b);
     if (action === 'anggaran/save') return actAngSave(b);
     if (action === 'anggaran/delete') return actAngDelete(b);
-    return out({ ok: false, error: 'action tidak dikenal: ' + action });
+
+    return out({ ok: false, code: 404, error: 'action tidak dikenal: ' + action });
   } catch (err) {
-    return out({ ok: false, error: msg(err) });
+    return out({ ok: false, code: 500, error: msg(err) });
   }
 }
 
-/* ======================= AKSI TULIS ======================= */
+/* ======================= SESI & LOGIN ======================= */
 
-function actAdd(b) {
-  var f = fields(b);
-  if (f.error) return out({ ok: false, error: f.error });
+function login_(b) {
+  var cfg = pinConfig_();
+  if (!cfg) {
+    return out({
+      ok: false,
+      code: 503,
+      error: 'PIN belum dikonfigurasi di Script Properties. Ikuti panduan keamanan.'
+    });
+  }
 
-  var sh = sheetTab(TAB);
-  ensureHeader(sh);
+  if (loginLocked_()) {
+    return out({
+      ok: false,
+      code: 429,
+      error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.'
+    });
+  }
 
-  var bukti = '';
-  if (b.buktiBase64) bukti = upload(b.buktiBase64, b.buktiName, f.tgl, f.ket);
+  var pin = String(b.pin || '');
+  if (!/^\d{6}$/.test(pin) || !pinOk(pin)) {
+    recordLoginFail_();
+    return out({ ok: false, code: 403, error: 'PIN salah' });
+  }
 
-  var row = lastDataRow(sh) + 1;
-  sh.getRange(row, 1, 1, 8).setValues([[
-    tglObj(f.tgl), f.ket, f.kat, f.tipe, f.nom, f.akun, bukti, f.tujuan
-  ]]);
-  formatRow(sh, row);
-
+  clearLoginFail_();
+  var session = issueSession_();
   return out({
-    ok: true, row: row, mode: 'apps-script',
-    tanggal: f.tgl, keterangan: f.ket, kategori: f.kat, tipe: f.tipe,
-    nominal: f.nom, akun: f.akun, akunTujuan: f.tujuan, bukti: bukti
+    ok: true,
+    token: session.token,
+    expiresAt: session.expiresAt,
+    expiresIn: session.expiresIn
   });
 }
 
-function actUpdate(b) {
-  var row = intVal(b.row);
-  if (row < 2) return out({ ok: false, error: 'row tidak valid' });
-
-  var f = fields(b);
-  if (f.error) return out({ ok: false, error: f.error });
-
-  var sh = sheetTab(TAB);
-  var old = sh.getRange(row, 1, 1, 8).getValues()[0] || [];
-  var bukti = String(old[6] || '').trim();
-  if (b.hapusBukti) bukti = '';
-  if (b.buktiBase64) bukti = upload(b.buktiBase64, b.buktiName, f.tgl, f.ket);
-
-  sh.getRange(row, 1, 1, 8).setValues([[
-    tglObj(f.tgl), f.ket, f.kat, f.tipe, f.nom, f.akun, bukti, f.tujuan
-  ]]);
-  formatRow(sh, row);
-
-  return out({ ok: true, row: row, mode: 'apps-script', bukti: bukti });
+function issueSession_() {
+  var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var expiresAt = Date.now() + SESSION_TTL_SECONDS * 1000;
+  CacheService.getScriptCache().put(
+    sessionKey_(token),
+    String(expiresAt) + '|' + authVersion_(),
+    SESSION_TTL_SECONDS
+  );
+  return { token: token, expiresAt: expiresAt, expiresIn: SESSION_TTL_SECONDS };
 }
 
-function actDelete(b) {
-  var row = intVal(b.row);
-  if (row < 2) return out({ ok: false, error: 'row tidak valid' });
-
-  var sh = sheetTab(TAB);
-  var old = sh.getRange(row, 1, 1, 8).getValues()[0] || [];
-  sh.deleteRow(row);
-
-  return out({ ok: true, row: row, mode: 'apps-script', keterangan: String(old[1] || '') });
-}
-
-function actAngSave(b) {
-  var row = intVal(b.row);
-  if (row === 1) return out({ ok: false, error: 'baris judul tidak boleh diubah' });
-
-  var kat = String(b.kat || '').trim().slice(0, 40);
-  if (!kat) return out({ ok: false, error: 'kategori kosong' });
-  var t1 = Math.max(0, toNum(b.t1));
-  var t2 = Math.max(0, toNum(b.t2));
-
-  var sh = sheetTab(TAB_ANG);
-  var items = readAnggaran();
-
-  if (!row) {
-    for (var i = 0; i < items.length; i++) {
-      if (String(items[i].kat).toLowerCase() === kat.toLowerCase()) {
-        return out({ ok: false, error: 'kategori sudah ada: ' + items[i].kat });
-      }
-    }
-    var maxRow = 1;
-    for (var j = 0; j < items.length; j++) maxRow = Math.max(maxRow, items[j].row);
-    row = maxRow + 1;
+function setupPin_(b) {
+  if (pinConfig_()) {
+    return out({ ok: false, code: 409, error: 'PIN sudah dikonfigurasi. Silakan login.' });
+  }
+  var setupToken = setupToken_();
+  if (!setupToken) {
+    return out({ ok: false, code: 503, error: 'Setup PIN belum diaktifkan. Tambahkan SETUP_TOKEN di Script Properties atau jalankan BUAT_KODE_SETUP().' });
+  }
+  if (setupLocked_()) {
+    return out({ ok: false, code: 429, error: 'Terlalu banyak percobaan setup. Coba lagi dalam 15 menit.' });
   }
 
-  sh.getRange(row, 1, 1, 3).setValues([[kat, rp(t1), rp(t2)]]);
-  return out({ ok: true, row: row, mode: 'apps-script', items: readAnggaran() });
+  var code = String(b.setupCode || '').trim();
+  if (!code || code !== setupToken) {
+    recordSetupFail_();
+    return out({ ok: false, code: 403, error: 'Kode setup salah' });
+  }
+
+  var pin = String(b.pin || '');
+  var confirm = String(b.pinConfirm || '');
+  if (!/^\d{6}$/.test(pin)) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus 6 angka.' });
+  }
+  if (pin !== confirm) {
+    return out({ ok: false, code: 400, error: 'Konfirmasi PIN tidak sama.' });
+  }
+
+  var salt = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var session = withLock_(function () {
+    if (pinConfig_() || setupToken_() !== setupToken) return null;
+    PropertiesService.getScriptProperties().setProperties({
+      PIN_SALT: salt,
+      PIN_HASH: h(pin + '|' + salt),
+      AUTH_VERSION: newAuthVersion_()
+    });
+    PropertiesService.getScriptProperties().deleteProperty('SETUP_TOKEN');
+    return issueSession_();
+  });
+  if (!session) {
+    return out({ ok: false, code: 409, error: 'PIN sudah dikonfigurasi. Silakan login.' });
+  }
+  clearSetupFail_();
+  return out({
+    ok: true,
+    token: session.token,
+    expiresAt: session.expiresAt,
+    expiresIn: session.expiresIn
+  });
 }
 
-function actAngDelete(b) {
-  var row = intVal(b.row);
-  if (row < 2) return out({ ok: false, error: 'row tidak valid' });
-  sheetTab(TAB_ANG).deleteRow(row);
-  return out({ ok: true, row: row, mode: 'apps-script', items: readAnggaran() });
+function changePin_(b) {
+  if (loginLocked_()) {
+    return out({ ok: false, code: 429, error: 'Terlalu banyak percobaan. Coba lagi dalam 15 menit.' });
+  }
+  var current = String(b.pin || '');
+  if (!pinOk(current)) {
+    recordLoginFail_();
+    return out({ ok: false, code: 403, error: 'PIN sekarang salah' });
+  }
+  var next = String(b.newPin || '');
+  var confirm = String(b.pinConfirm || '');
+  if (!/^\d{6}$/.test(next)) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus 6 angka.' });
+  }
+  if (next !== confirm) {
+    return out({ ok: false, code: 400, error: 'Konfirmasi PIN baru tidak sama.' });
+  }
+  if (next === current) {
+    return out({ ok: false, code: 400, error: 'PIN baru harus berbeda dari PIN sekarang.' });
+  }
+
+  var salt = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  var version = newAuthVersion_();
+  withLock_(function () {
+    PropertiesService.getScriptProperties().setProperties({
+      PIN_SALT: salt,
+      PIN_HASH: h(next + '|' + salt),
+      AUTH_VERSION: version
+    });
+  });
+  clearLoginFail_();
+  CacheService.getScriptCache().remove(sessionKey_(b.token));
+  return out({ ok: true, relogin: true });
+}
+
+function sessionKey_(token) {
+  return 'sess:' + String(token || '');
+}
+
+function sessionOk_(token) {
+  token = String(token || '');
+  if (!/^[a-f0-9]{64}$/.test(token)) return false;
+  var cache = CacheService.getScriptCache();
+  var raw = cache.get(sessionKey_(token));
+  if (!raw) return false;
+  var parts = String(raw).split('|');
+  var exp = Number(parts[0]);
+  if (!exp || Date.now() >= exp || String(parts[1] || '') !== authVersion_()) {
+    cache.remove(sessionKey_(token));
+    return false;
+  }
+  return true;
+}
+
+function loginLocked_() {
+  return !!CacheService.getScriptCache().get('login_lock_v1');
+}
+
+function recordLoginFail_() {
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get('login_fail_v1') || 0) + 1;
+  cache.put('login_fail_v1', String(n), LOGIN_WINDOW_SECONDS);
+  if (n >= MAX_LOGIN_FAILS) {
+    cache.put('login_lock_v1', '1', LOGIN_WINDOW_SECONDS);
+    cache.remove('login_fail_v1');
+  }
+}
+
+function clearLoginFail_() {
+  var cache = CacheService.getScriptCache();
+  cache.remove('login_fail_v1');
+  cache.remove('login_lock_v1');
+}
+
+function setupLocked_() {
+  return !!CacheService.getScriptCache().get('setup_lock_v1');
+}
+
+function recordSetupFail_() {
+  var cache = CacheService.getScriptCache();
+  var n = Number(cache.get('setup_fail_v1') || 0) + 1;
+  cache.put('setup_fail_v1', String(n), LOGIN_WINDOW_SECONDS);
+  if (n >= MAX_SETUP_FAILS) {
+    cache.put('setup_lock_v1', '1', LOGIN_WINDOW_SECONDS);
+    cache.remove('setup_fail_v1');
+  }
+}
+
+function clearSetupFail_() {
+  var cache = CacheService.getScriptCache();
+  cache.remove('setup_fail_v1');
+  cache.remove('setup_lock_v1');
 }
 
 /* ======================= BACA DATA ======================= */
+
+function readAll_() {
+  return {
+    trx: readSheetMatrix_(TAB, 9),
+    opname: readSheetMatrix_(TAB_OPNAME, 6),
+    anggaran: readSheetMatrix_(TAB_ANG, 3),
+    tabungan: readSheetMatrix_(TAB_TABUNGAN, 7)
+  };
+}
+
+/**
+ * Mengembalikan matriks baris demi baris, kompatibel dengan parser lama.
+ * Tanggal dinormalisasi ke YYYY-MM-DD agar tidak bergantung timezone browser.
+ */
+function readSheetMatrix_(name, width) {
+  var sh = sheetTab(name);
+  var last = sh.getLastRow();
+  if (last < 1) return [];
+  var vals = sh.getRange(1, 1, last, width).getValues();
+  return vals.map(function (row) {
+    return row.map(function (v) {
+      var tag = Object.prototype.toString.call(v);
+      if (tag === '[object Date]') return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+      if (v === null || v === undefined) return '';
+      return v;
+    });
+  });
+}
 
 function listRows(n) {
   var sh = sheetTab(TAB);
   var last = sh.getLastRow();
   if (last < 2) return [];
 
-  var vals = sh.getRange(2, 1, last - 1, 8).getValues();
+  var vals = sh.getRange(2, 1, last - 1, 10).getValues();
   var outItems = [];
   for (var i = 0; i < vals.length; i++) {
     var r = vals[i];
@@ -164,22 +355,23 @@ function listRows(n) {
     if (VALID_TIPE.indexOf(tipe) < 0) continue;
     outItems.push({
       row: i + 2,
+      id: String(r[8] || '').trim(),
       tanggal: isoOf(r[0]),
       tanggalTampil: isoOf(r[0]),
-      keterangan: String(r[1] || '').trim(),
-      kategori: String(r[2] || '').trim(),
+      keterangan: cleanText_(r[1], 160),
+      kategori: cleanText_(r[2], 60),
       tipe: tipe,
       nominal: toNum(r[4]),
-      akun: String(r[5] || '').trim(),
+      akun: cleanText_(r[5], 40),
       bukti: String(r[6] || '').trim(),
-      akunTujuan: String(r[7] || '').trim()
+      akunTujuan: cleanText_(r[7], 60)
     });
   }
   outItems.sort(function (a, b) { return b.row - a.row; });
 
   var lim = intVal(n);
-  if (!lim || lim < 1) lim = 30;
-  if (lim > 300) lim = 300;
+  if (!lim || lim < 1) lim = 300;
+  if (lim > 5000) lim = 5000;
   return outItems.slice(0, lim);
 }
 
@@ -190,48 +382,423 @@ function readAnggaran() {
   var vals = sh.getRange(2, 1, last - 1, 3).getValues();
   var items = [];
   for (var i = 0; i < vals.length; i++) {
-    var kat = String(vals[i][0] || '').trim();
+    var kat = cleanText_(vals[i][0], 60);
     if (!kat) continue;
     items.push({ row: i + 2, kat: kat, t1: toNum(vals[i][1]), t2: toNum(vals[i][2]) });
   }
   return items;
 }
 
-/* ======================= PEMBANTU ======================= */
+/* ======================= AKSI TULIS ======================= */
+
+function actAdd(b) {
+  var f = fields(b);
+  if (f.error) return out({ ok: false, code: 400, error: f.error });
+
+  var req = cleanRequestId_(b.requestId);
+  var sh = sheetTab(TAB);
+
+  var early = withLock_(function () {
+    ensureHeader(sh);
+    if (req) {
+      var hit = findByRequestId_(sh, req);
+      if (hit) return hit;
+    }
+    return null;
+  });
+  if (early) {
+    return out({
+      ok: true,
+      duplicate: true,
+      row: early.row,
+      id: early.id,
+      mode: 'apps-script',
+      tanggal: f.tgl,
+      keterangan: f.ket,
+      kategori: f.kat,
+      tipe: f.tipe,
+      nominal: f.nom,
+      akun: f.akun,
+      akunTujuan: f.tujuan
+    });
+  }
+
+  var bukti = '';
+  if (b.buktiBase64) {
+    try {
+      bukti = upload(b.buktiBase64, b.buktiName, f.tgl, f.ket);
+    } catch (uploadErr) {
+      return out({ ok: false, code: 400, error: 'Upload bukti gagal: ' + msg(uploadErr) });
+    }
+  }
+
+  var saved = withLock_(function () {
+    ensureHeader(sh);
+    if (req) {
+      var hit = findByRequestId_(sh, req);
+      if (hit) return { row: hit.row, id: hit.id, duplicate: true };
+    }
+    var row = lastDataRow(sh) + 1;
+    var id = Utilities.getUuid();
+    sh.getRange(row, 1, 1, 10).setValues([[
+      tglObj(f.tgl), f.ket, f.kat, f.tipe, f.nom, f.akun, bukti, f.tujuan, id, req || ''
+    ]]);
+    formatRow(sh, row);
+    return { row: row, id: id, duplicate: false };
+  });
+
+  return out({
+    ok: true,
+    duplicate: !!saved.duplicate,
+    row: saved.row,
+    id: saved.id,
+    mode: 'apps-script',
+    tanggal: f.tgl,
+    keterangan: f.ket,
+    kategori: f.kat,
+    tipe: f.tipe,
+    nominal: f.nom,
+    akun: f.akun,
+    akunTujuan: f.tujuan,
+    bukti: bukti
+  });
+}
+
+function actUpdate(b) {
+  var f = fields(b);
+  if (f.error) return out({ ok: false, code: 400, error: f.error });
+
+  var sh = sheetTab(TAB);
+  var result = withLock_(function () {
+    ensureHeader(sh);
+    var row = resolveRow_(sh, b);
+    var old = sh.getRange(row, 1, 1, 10).getValues()[0] || [];
+    var bukti = String(old[6] || '').trim();
+    if (b.hapusBukti) bukti = '';
+    if (b.buktiBase64) {
+      bukti = upload(b.buktiBase64, b.buktiName, f.tgl, f.ket);
+    }
+    var id = cleanId_(old[8]) || Utilities.getUuid();
+    var req = cleanRequestId_(old[9]);
+    sh.getRange(row, 1, 1, 10).setValues([[
+      tglObj(f.tgl), f.ket, f.kat, f.tipe, f.nom, f.akun, bukti, f.tujuan, id, req
+    ]]);
+    formatRow(sh, row);
+    return { row: row, id: id, bukti: bukti };
+  });
+
+  return out({
+    ok: true,
+    row: result.row,
+    id: result.id,
+    mode: 'apps-script',
+    bukti: result.bukti
+  });
+}
+
+function actDelete(b) {
+  var sh = sheetTab(TAB);
+  var result = withLock_(function () {
+    ensureHeader(sh);
+    var row = resolveRow_(sh, b);
+    var old = sh.getRange(row, 1, 1, 10).getValues()[0] || [];
+    sh.deleteRow(row);
+    return { row: row, id: cleanId_(old[8]), keterangan: cleanText_(old[1], 160) };
+  });
+
+  return out({
+    ok: true,
+    row: result.row,
+    id: result.id,
+    mode: 'apps-script',
+    keterangan: result.keterangan
+  });
+}
+
+function actAngSave(b) {
+  var kat = cleanText_(b.kat, 60);
+  if (!kat) return out({ ok: false, code: 400, error: 'kategori kosong' });
+  var t1 = Math.max(0, toNum(b.t1));
+  var t2 = Math.max(0, toNum(b.t2));
+  if (t1 > 1000000000000 || t2 > 1000000000000) {
+    return out({ ok: false, code: 400, error: 'anggaran terlalu besar' });
+  }
+
+  var row = intVal(b.row);
+  if (row === 1) return out({ ok: false, code: 400, error: 'baris judul tidak boleh diubah' });
+
+  var sh = sheetTab(TAB_ANG);
+  var savedRow = withLock_(function () {
+    var items = readAnggaran();
+    if (!row) {
+      for (var i = 0; i < items.length; i++) {
+        if (String(items[i].kat).toLowerCase() === kat.toLowerCase()) {
+          throw new Error('kategori sudah ada: ' + items[i].kat);
+        }
+      }
+      var maxRow = 1;
+      for (var j = 0; j < items.length; j++) maxRow = Math.max(maxRow, items[j].row);
+      row = maxRow + 1;
+    } else {
+      for (var k = 0; k < items.length; k++) {
+        if (items[k].row !== row && String(items[k].kat).toLowerCase() === kat.toLowerCase()) {
+          throw new Error('kategori sudah ada: ' + items[k].kat);
+        }
+      }
+      if (row > sh.getLastRow()) throw new Error('baris anggaran tidak ditemukan');
+    }
+    sh.getRange(row, 1, 1, 3).setValues([[kat, rp(t1), rp(t2)]]);
+    return row;
+  });
+
+  return out({ ok: true, row: savedRow, mode: 'apps-script', items: readAnggaran() });
+}
+
+function actAngDelete(b) {
+  var row = intVal(b.row);
+  if (row < 2) return out({ ok: false, code: 400, error: 'row tidak valid' });
+  var sh = sheetTab(TAB_ANG);
+  withLock_(function () {
+    if (row > sh.getLastRow()) throw new Error('baris anggaran tidak ditemukan');
+    sh.deleteRow(row);
+  });
+  return out({ ok: true, row: row, mode: 'apps-script', items: readAnggaran() });
+}
+
+/* ======================= ID & IDEMPOTENSI ======================= */
+
+function ensureHeader(sh) {
+  var h1 = sh.getRange(1, 1, 1, 10).getValues()[0] || [];
+  var changed = false;
+  if (!String(h1[7] || '').trim()) { h1[7] = HDR_H; changed = true; }
+  if (!String(h1[8] || '').trim()) { h1[8] = HDR_ID; changed = true; }
+  if (!String(h1[9] || '').trim()) { h1[9] = HDR_REQ; changed = true; }
+  if (changed) sh.getRange(1, 1, 1, 10).setValues([h1]);
+}
+
+function findRowById_(sh, id) {
+  id = cleanId_(id);
+  if (!id) return 0;
+  var last = sh.getLastRow();
+  if (last < 2) return 0;
+  var vals = sh.getRange(2, 9, last - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][0] || '').trim() === id) return i + 2;
+  }
+  return 0;
+}
+
+function findByRequestId_(sh, req) {
+  req = cleanRequestId_(req);
+  if (!req) return null;
+  var last = sh.getLastRow();
+  if (last < 2) return null;
+  var vals = sh.getRange(2, 9, last - 1, 2).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][1] || '').trim() === req) {
+      return { row: i + 2, id: String(vals[i][0] || '').trim() };
+    }
+  }
+  return null;
+}
+
+function resolveRow_(sh, b) {
+  var id = cleanId_(b.id);
+  if (id) {
+    var found = findRowById_(sh, id);
+    if (!found) throw new Error('Transaksi tidak ditemukan. Muat ulang data lalu coba lagi.');
+    return found;
+  }
+  var row = intVal(b.row);
+  if (row < 2) throw new Error('row tidak valid');
+  if (row > sh.getLastRow()) throw new Error('baris transaksi tidak ditemukan');
+  return row;
+}
+
+/**
+ * Jalankan manual sekali dari editor Apps Script setelah deploy, jika ingin
+ * memberi ID permanen pada transaksi lama. Tidak dipanggil otomatis.
+ */
+function migrateTransactionIds() {
+  var sh = sheetTab(TAB);
+  var result = withLock_(function () {
+    ensureHeader(sh);
+    var last = sh.getLastRow();
+    if (last < 2) return { updated: 0, total: 0 };
+    var vals = sh.getRange(2, 9, last - 1, 1).getValues();
+    var ids = [];
+    var updated = 0;
+    for (var i = 0; i < vals.length; i++) {
+      var id = cleanId_(vals[i][0]);
+      if (!id) {
+        id = Utilities.getUuid();
+        updated++;
+      }
+      ids.push([id]);
+    }
+    sh.getRange(2, 9, last - 1, 1).setValues(ids);
+    return { updated: updated, total: last - 1 };
+  });
+  Logger.log('ID transaksi: ' + result.updated + ' baru dari ' + result.total + ' baris.');
+  return result;
+}
+
+/**
+ * Jalankan manual sekali untuk mencabut akses publik file bukti lama yang
+ * sebelumnya dibuat dengan ANYONE_WITH_LINK. Tidak dipanggil otomatis.
+ */
+function revokePublicProofLinks() {
+  var sh = sheetTab(TAB);
+  var last = sh.getLastRow();
+  if (last < 2) return { checked: 0, revoked: 0 };
+  var vals = sh.getRange(2, 7, last - 1, 1).getValues();
+  var checked = 0, revoked = 0, failed = 0;
+  for (var i = 0; i < vals.length; i++) {
+    var url = String(vals[i][0] || '');
+    var m = /(?:id=|\/d\/)([A-Za-z0-9_-]{10,})/.exec(url);
+    if (!m) continue;
+    checked++;
+    try {
+      var file = DriveApp.getFileById(m[1]);
+      file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.NONE);
+      revoked++;
+    } catch (e) {
+      failed++;
+    }
+  }
+  Logger.log('Bukti diperiksa: ' + checked + ', dicabut: ' + revoked + ', gagal: ' + failed);
+  return { checked: checked, revoked: revoked, failed: failed };
+}
+
+/* ======================= VALIDASI ======================= */
 
 function fields(b) {
   var tgl = String(b.tanggal || '').trim();
-  var ket = String(b.keterangan || '').trim();
-  var kat = String(b.kategori || '').trim() || 'Tanpa Kategori';
+  var ket = cleanText_(b.keterangan, 160);
+  var kat = cleanText_(b.kategori, 60) || 'Tanpa Kategori';
   var tipe = String(b.tipe || '').trim();
   var nom = toNum(b.nominal);
-  var akun = String(b.akun || '').trim();
-  var tujuan = String(b.akunTujuan || '').trim();
+  var akun = cleanText_(b.akun, 40);
+  var tujuan = cleanText_(b.akunTujuan, 60);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(tgl)) return { error: 'tanggal harus YYYY-MM-DD' };
+  if (!validIsoDate_(tgl)) return { error: 'tanggal harus berupa tanggal YYYY-MM-DD yang valid' };
   if (!ket) return { error: 'keterangan kosong' };
   if (VALID_TIPE.indexOf(tipe) < 0) return { error: 'tipe tidak valid' };
-  if (!(nom > 0)) return { error: 'nominal harus > 0' };
+  if (!(nom > 0) || !isFinite(nom) || nom > 1000000000000) return { error: 'nominal harus > 0 dan wajar' };
   if (!akun) return { error: 'akun kosong' };
   if (tipe === 'Transfer' && !tujuan) return { error: 'akun tujuan wajib untuk transfer' };
   if (tipe === 'Transfer' && tujuan === akun) return { error: 'akun asal dan tujuan tidak boleh sama' };
+  if (tipe === 'Pemasukan' || tipe === 'Pengeluaran' || tipe === 'Opname/Koreksi') tujuan = '';
 
   return { tgl: tgl, ket: ket, kat: kat, tipe: tipe, nom: nom, akun: akun, tujuan: tujuan };
 }
 
+function validIsoDate_(s) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+  if (!m) return false;
+  var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  if (y < 2000 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+  var dt = new Date(Date.UTC(y, mo - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
+}
+
+function cleanText_(v, max) {
+  return String(v === null || v === undefined ? '' : v)
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max || 200);
+}
+
+function cleanId_(v) {
+  v = String(v === null || v === undefined ? '' : v).trim();
+  return /^[A-Za-z0-9_-]{6,80}$/.test(v) ? v : '';
+}
+
+function cleanRequestId_(v) {
+  v = String(v === null || v === undefined ? '' : v).trim();
+  return /^[A-Za-z0-9_-]{8,80}$/.test(v) ? v : '';
+}
+
+/* ======================= PEMBANTU ======================= */
+
+function prop_(key, fallback) {
+  try {
+    var v = PropertiesService.getScriptProperties().getProperty(key);
+    return (v === null || v === '') ? fallback : v;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function sheetId_() {
+  return String(prop_('SHEET_ID', DEFAULT_SHEET_ID)).trim();
+}
+
+function folderName_() {
+  return String(prop_('DRIVE_FOLDER', FOLDER_DEFAULT)).trim() || FOLDER_DEFAULT;
+}
+
+function pinConfig_() {
+  var hash = String(prop_('PIN_HASH', '') || '').toLowerCase();
+  var salt = String(prop_('PIN_SALT', '') || '');
+  if (!/^[a-f0-9]{64}$/.test(hash) || !salt) return null;
+  return { hash: hash, salt: salt };
+}
+
+function authVersion_() {
+  return String(prop_('AUTH_VERSION', '1'));
+}
+
+function newAuthVersion_() {
+  return Utilities.getUuid().replace(/-/g, '');
+}
+
+function setupToken_() {
+  var token = String(prop_('SETUP_TOKEN', '') || '').trim();
+  if (token.length < MIN_SETUP_TOKEN_LENGTH) return '';
+  return token;
+}
+
+/**
+ * Jalankan sekali dari editor Apps Script untuk membuat kode setup acak.
+ * Kode hanya ditampilkan di dialog editor dan disimpan di Script Properties,
+ * tidak ditulis ke log atau dikirim ke chat.
+ */
+function BUAT_KODE_SETUP() {
+  var code = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('SETUP_TOKEN', code);
+  try {
+    Browser.msgBox(
+      'Kode setup PIN',
+      'Masukkan kode ini di dashboard pada menu "Pertama kali? Buat PIN":\n\n' + code + '\n\nJangan bagikan kode ini. Setelah PIN dibuat, kode otomatis dihapus.',
+      Browser.Buttons.OK
+    );
+  } catch (e) {
+    Logger.log('SETUP_TOKEN sudah dibuat. Buka Project Settings > Script Properties untuk menyalin nilainya.');
+  }
+}
+
 function pinOk(pin) {
-  return h(String(pin || '') + '|' + SALT) === PIN_HASH;
+  var cfg = pinConfig_();
+  if (!cfg) return false;
+  return h(String(pin || '') + '|' + cfg.salt) === cfg.hash;
+}
+
+function withLock_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function sheetTab(name) {
-  var sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(name);
+  var sh = SpreadsheetApp.openById(sheetId_()).getSheetByName(name);
   if (!sh) throw new Error('tab tidak ada: ' + name);
   return sh;
-}
-
-function ensureHeader(sh) {
-  var h1 = sh.getRange(1, 1, 1, 8).getValues()[0] || [];
-  if (!String(h1[7] || '').trim()) sh.getRange(1, 8).setValue(HDR_H);
 }
 
 function lastDataRow(sh) {
@@ -251,12 +818,13 @@ function formatRow(sh, row) {
 
 function tglObj(iso) {
   var p = String(iso).split('-');
-  return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 12, 0, 0);
+  // 05:00 UTC = 12:00 Asia/Jakarta; tidak bergantung timezone project.
+  return new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 5, 0, 0));
 }
 
 function isoOf(v) {
   var tag = Object.prototype.toString.call(v);
-  if (tag === '[object Date]') return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  if (tag === '[object Date]') return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
   if (typeof v === 'number') {
     var d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
     return Utilities.formatDate(d, 'UTC', 'yyyy-MM-dd');
@@ -276,7 +844,9 @@ function parseTextDate(s) {
   var mm = /^\d+$/.test(m[2]) ? Number(m[2]) : (BULAN[m[2].slice(0, 3).toLowerCase()] || 0);
   var yy = Number(m[3]);
   if (!(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)) return '';
-  return Utilities.formatDate(new Date(yy, mm - 1, dd, 12, 0, 0), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var dt = new Date(Date.UTC(yy, mm - 1, dd, 5, 0, 0));
+  if (dt.getUTCFullYear() !== yy || dt.getUTCMonth() !== mm - 1 || dt.getUTCDate() !== dd) return '';
+  return Utilities.formatDate(dt, TZ, 'yyyy-MM-dd');
 }
 
 function toNum(v) {
@@ -300,17 +870,19 @@ function rp(v) {
 }
 
 function upload(b64, name, tgl, ket) {
-  var clean = String(b64).replace(/^data:[^;]+;base64,/, '');
+  var clean = String(b64 || '').replace(/^data:[^;]+;base64,/, '');
+  if (!clean) throw new Error('data bukti kosong');
+  if (clean.length > 8 * 1024 * 1024) throw new Error('ukuran bukti terlalu besar');
   var blob = Utilities.newBlob(Utilities.base64Decode(clean));
   var ext = 'jpg';
   var m = /\.(png|jpe?g|webp|heic)$/i.exec(String(name || ''));
   if (m) ext = m[1].toLowerCase().replace('jpeg', 'jpg');
   var safe = String(ket).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).toLowerCase();
   blob.setName('bukti_' + String(tgl).replace(/-/g, '') + '_' + (safe || 'trx') + '.' + ext);
-  var it = DriveApp.getFoldersByName(FOLDER);
-  var folder = it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER);
+  var it = DriveApp.getFoldersByName(folderName_());
+  var folder = it.hasNext() ? it.next() : DriveApp.createFolder(folderName_());
   var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  // Sengaja tidak memanggil setSharing: file tetap privat bagi pemilik Drive.
   return 'https://drive.google.com/uc?export=view&id=' + file.getId();
 }
 
@@ -323,7 +895,7 @@ function h(s) {
 }
 
 function nowStr() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+  return Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
 }
 
 function msg(err) {
