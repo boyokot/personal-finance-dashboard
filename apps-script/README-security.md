@@ -4,6 +4,16 @@ Dokumen ini adalah panduan manual untuk memasang backend `Code.gs` yang sudah
 diperketat. Frontend **tidak boleh** di-merge/deploy sebelum langkah backend di
 bawah selesai.
 
+## Urutan aman (jangan dibalik)
+
+1. Buat `PIN_HASH`/`PIN_SALT`, lalu pasang `Code.gs` dan Script Properties.
+2. Deploy backend versi baru.
+3. Segera deploy frontend baru, lalu login dan pastikan data terbaca.
+4. Baru hentikan **Publish to web**, buat folder bukti privat, dan jalankan
+   `revokePublicProofLinks()` / `migrateTransactionIds()`.
+5. Jangan mencatat transaksi selama pergantian; frontend lama tidak bisa
+   menulis ke backend baru.
+
 ## Yang berubah
 
 - PIN tidak lagi ditulis di source. `PIN_HASH` dan `PIN_SALT` dibaca dari
