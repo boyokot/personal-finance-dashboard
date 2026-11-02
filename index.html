@@ -603,6 +603,7 @@ td.num { font-weight: 800; }
 }
 .screen-head h2 { margin-top: 2px; }
 .screen-head .primary-btn { flex: none; min-height: 39px; padding: 8px 13px; font-size: 11.5px; }
+.card-head .primary-btn { white-space: nowrap; }
 .filter-card { padding: 13px 14px; }
 .trx-filter {
   display: flex;
@@ -897,6 +898,8 @@ td.num { font-weight: 800; }
   cursor: pointer;
   box-shadow: 0 5px 14px rgba(14, 122, 79, .22);
 }
+/* Layar Transaksi sudah punya tombol "+ Catat" sendiri. */
+body[data-screen="transaksi"] .header-add { display: none; }
 @media (max-width: 360px) {
   .refresh-badge { display: none; }
 }
@@ -1321,7 +1324,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   .hero-metrics { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 8px; }
   .home-summary-item .stat-sub { font-size: 9px; }
 }
-</style></head><body data-tema="lime">
+</style></head><body data-tema="lime" data-screen="beranda">
 <div class="container">
   <header class="app-header" id="appHeader">
     <div class="brand-row">
@@ -1505,7 +1508,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
       <div class="target-panel" id="target-anggaran" hidden>
         <div class="card">
-          <div class="card-head"><div><h3>Kelola anggaran</h3><div class="sub" style="margin-top:3px">Atur batas pengeluaran per kategori.</div></div><button type="button" class="primary-btn" onclick="angAddNew()">+ Tambah</button></div>
+          <div class="card-head"><div><h3>Kelola anggaran</h3><div class="sub" style="margin-top:3px">Atur batas pengeluaran per kategori.</div></div><button type="button" class="primary-btn" onclick="angAddNew()" aria-label="Tambah anggaran kategori">+ Anggaran</button></div>
           <div class="stat-sub">Anggaran mengikuti tier yang aktif: <strong id="tierLabel">Plan Utama</strong>.</div>
         </div>
         <div class="section-head"><div><div class="eyebrow">Realisasi</div><h2>Anggaran bulanan</h2></div></div>
@@ -1761,7 +1764,7 @@ const savingT2 = [
 function rp(v){ v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
 function shortRp(v){ v=Math.abs(v); function d(n){ return String(n).replace('.', ','); } if(v>=1e9)return'Rp'+d((v/1e9).toFixed(1))+'M'; if(v>=1e6)return'Rp'+d((v/1e6).toFixed(1))+'jt'; if(v>=1e3)return'Rp'+(v/1e3).toFixed(0)+'rb'; return'Rp'+Math.round(v); }
 function num(x){ if(x===null||x==='')return 0; if(typeof x==='number')return x; var s=String(x).replace(/Rp|\s|\./g,'').replace(',','').trim(); var n=parseFloat(s); return isNaN(n)?0:n; }
-function parseDate(s){ if(!s)return null; s=String(s).trim(); if(/^\d+$/.test(s)||/^\d+\.\d+$/.test(s)){ var d=new Date(1899,11,30); d.setDate(d.getDate()+parseInt(parseFloat(s))); return d; } var p=s.split(' '); if(p.length===3){ var m=bm[p[1]]; if(m)return new Date(Date.UTC(parseInt(p[2]),m-1,parseInt(p[0]))); } var md=s.match(/^(\d(1, 2))\/(\d(1, 2))\/(\d4)$/); if(md)return new Date(Date.UTC(parseInt(md[3]),parseInt(md[2])-1,parseInt(md[1]))); if(s.indexOf('-')>=0){ var d2=new Date(s+'T00:00:00Z'); if(!isNaN(d2.getTime()))return d2; } return null; }
+function parseDate(s){ if(!s)return null; s=String(s).trim(); if(/^\d+$/.test(s)||/^\d+\.\d+$/.test(s)){ var d=new Date(1899,11,30); d.setDate(d.getDate()+parseInt(parseFloat(s))); return d; } var p=s.split(' '); if(p.length===3){ var m=bm[p[1]]; if(m)return new Date(Date.UTC(parseInt(p[2]),m-1,parseInt(p[0]))); } var md=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(md)return new Date(Date.UTC(parseInt(md[3]),parseInt(md[2])-1,parseInt(md[1]))); if(s.indexOf('-')>=0){ var d2=new Date(s+'T00:00:00Z'); if(!isNaN(d2.getTime()))return d2; } return null; }
 function dateDisplay(s){ var d=parseDate(s); if(!d)return String(s); return d.getDate()+' '+bn[d.getMonth()+1].substr(0,3)+' '+d.getFullYear(); }
 function dateISO(s){ var d=parseDate(s); return d?d.toISOString().split('T')[0]:''; }
 
@@ -4033,6 +4036,7 @@ function showScreen(name, noHash, tab){
   if(name === 'tabungan'){ tab = 'tabungan'; name = 'target'; }
   if(SCREENS.indexOf(name) < 0) name = 'beranda';
   currentScreen = name;
+  document.body.setAttribute('data-screen', name);
   SCREENS.forEach(function(sc){
     var el = document.getElementById('screen-' + sc);
     if(!el) return;
@@ -4042,7 +4046,10 @@ function showScreen(name, noHash, tab){
   var nav = document.getElementById('bottomnav');
   if(nav){
     Array.prototype.forEach.call(nav.querySelectorAll('button[data-nav]'), function(b){
-      b.classList.toggle('on', b.getAttribute('data-nav') === name);
+      var active = b.getAttribute('data-nav') === name;
+      b.classList.toggle('on', active);
+      if(active) b.setAttribute('aria-current','page');
+      else b.removeAttribute('aria-current');
     });
   }
   if(!noHash){ try { history.replaceState(null,'','#/' + name); } catch(e){} }
