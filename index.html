@@ -805,6 +805,12 @@ td.num { font-weight: 800; }
 #setInfo { font-size: 10.5px; line-height: 1.7; }
 #setInfo strong { color: var(--text); }
 #setPingMsg { margin-top: 8px; font-size: 10.5px; }
+.pin-form { display: grid; gap: 8px; }
+.pin-form label { color: var(--muted); font-size: 10px; font-weight: 800; }
+.pin-form input { display: block; width: 100%; height: 42px; margin-top: 4px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; font-weight: 800; letter-spacing: .3em; }
+.pin-form input:focus { outline: 0; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.pin-change-btn { width: 100%; margin-top: 9px; }
+#pinChangeMsg { min-height: 16px; margin-top: 8px; margin-bottom: 0; }
 
 /* ---------- empty / loading / footer ---------- */
 .loading-state {
@@ -1241,7 +1247,7 @@ body.fin-auth-locked .container,
 body.fin-auth-locked .bottomnav { display: none !important; }
 .auth-gate { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; background: radial-gradient(circle at 12% 8%, rgba(159,232,112,.26), transparent 32%), linear-gradient(145deg, #f5f7f2, #eef4e9 55%, #f7f3ea); }
 .auth-gate[hidden] { display: none !important; }
-.auth-card { width: min(430px, 100%); padding: 25px 22px 21px; border: 1px solid var(--line); border-radius: 26px; background: rgba(255,255,255,.94); box-shadow: 0 22px 70px rgba(20,37,28,.16); }
+.auth-card { width: min(430px, 100%); max-height: calc(100vh - 36px); overflow-y: auto; padding: 25px 22px 21px; border: 1px solid var(--line); border-radius: 26px; background: rgba(255,255,255,.94); box-shadow: 0 22px 70px rgba(20,37,28,.16); }
 .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
 .auth-brand .brand-mark { width: 46px; height: 46px; border-radius: 15px; }
 .auth-brand strong { display: block; color: var(--text); font-size: 15px; letter-spacing: -.2px; }
@@ -1253,12 +1259,17 @@ body.fin-auth-locked .bottomnav { display: none !important; }
 .auth-field span { color: var(--muted); font-size: 16px; }
 .auth-field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 20px; font-weight: 800; letter-spacing: .42em; }
 .auth-field input::placeholder { color: #b9c4bb; font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.auth-field input.auth-code { font-size: 13px; letter-spacing: .06em; font-weight: 700; }
+.auth-field + .auth-field { margin-top: 8px; }
 .auth-submit { width: 100%; min-height: 50px; margin-top: 11px; border: 0; border-radius: 999px; background: var(--primary); color: #fff; font: inherit; font-size: 13.5px; font-weight: 850; cursor: pointer; }
 .auth-submit:disabled { cursor: wait; opacity: .64; }
 .auth-msg { min-height: 18px; margin-top: 10px; color: var(--negative); font-size: 11.5px; font-weight: 700; }
 .auth-msg.ok { color: var(--primary); }
 .auth-note { margin: 14px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .auth-link { display: inline-flex; margin-top: 11px; color: var(--primary); font-size: 11px; font-weight: 800; text-decoration: none; }
+.auth-link[hidden] { display: none; }
+.auth-link + .auth-link { margin-left: 12px; }
+.auth-link.auth-link-plain { border: 0; padding: 0; background: transparent; cursor: pointer; font: inherit; font-size: 11px; font-weight: 800; }
 
 /* themes */
 body[data-tema="ungu"] { --primary: #6d4bc3; --primary-strong: #5636a6; --primary-soft: #f0ebff; --primary-pale: #f8f5ff; }
@@ -1356,7 +1367,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       <div><strong>Keuangan Bukhori</strong><span>Data privat · sesi aman</span></div>
     </div>
     <h2 id="authTitle">Buka dashboard</h2>
-    <p class="auth-copy">Masukkan PIN 6 angka untuk membuka data keuangan. PIN dikirim ke Apps Script dan tidak disimpan di perangkat ini.</p>
+    <p class="auth-copy" id="authCopy">Masukkan PIN 6 angka untuk membuka data keuangan. PIN dikirim ke Apps Script dan tidak disimpan di perangkat ini.</p>
     <form id="authForm" onsubmit="finLogin(event)" novalidate>
       <label class="auth-field" for="authPin">
         <span aria-hidden="true">●</span>
@@ -1364,8 +1375,25 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       </label>
       <button class="auth-submit" id="authBtn" type="submit">Buka dengan PIN</button>
     </form>
+    <form id="authSetupForm" onsubmit="finSetup(event)" novalidate hidden>
+      <label class="auth-field" for="authSetupCode">
+        <span aria-hidden="true">⌁</span>
+        <input aria-label="Kode setup sekali pakai" autocomplete="one-time-code" class="auth-code" id="authSetupCode" maxlength="128" placeholder="Kode setup dari Apps Script" type="password"/>
+      </label>
+      <label class="auth-field" for="authNewPin">
+        <span aria-hidden="true">●</span>
+        <input aria-label="PIN baru 6 angka" autocomplete="new-password" id="authNewPin" inputmode="numeric" maxlength="6" placeholder="PIN baru 6 angka" type="password"/>
+      </label>
+      <label class="auth-field" for="authNewPin2">
+        <span aria-hidden="true">●</span>
+        <input aria-label="Ulangi PIN baru 6 angka" autocomplete="new-password" id="authNewPin2" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN baru" type="password"/>
+      </label>
+      <button class="auth-submit" id="authSetupBtn" type="submit">Simpan PIN &amp; Buka</button>
+    </form>
     <div class="auth-msg" id="authMsg" role="alert" aria-live="polite"></div>
-    <p class="auth-note">Sesi berlaku 6 jam. Jangan bagikan PIN. Jika lupa PIN, ubah <code>PIN_HASH</code> dan <code>PIN_SALT</code> di Script Properties Apps Script.</p>
+    <button class="auth-link auth-link-plain" id="authSetupToggle" type="button" onclick="finToggleSetup(true)">Pertama kali? Buat PIN</button>
+    <button class="auth-link auth-link-plain" id="authBackToggle" type="button" onclick="finToggleSetup(false)" hidden>← Kembali ke login</button>
+    <p class="auth-note">Sesi berlaku 6 jam. Jangan bagikan PIN atau kode setup. PIN bisa diubah nanti di Pengaturan. Jika kode setup belum ada, jalankan <code>BUAT_KODE_SETUP()</code> dari editor Apps Script; jika PIN lupa, reset lewat editor.</p>
     <a class="auth-link" href="./latest.html">Muat ulang versi terbaru →</a>
   </div>
 </div>
@@ -1630,6 +1658,23 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         </div>
       </div>
       <div class="card settings-card">
+        <h3>PIN dashboard</h3>
+        <div class="sub">Ganti PIN 6 angka. Setelah berhasil, semua sesi akan logout dan login ulang dengan PIN baru.</div>
+        <div class="pin-form">
+          <label for="pinCurrent">PIN sekarang
+            <input aria-label="PIN sekarang" autocomplete="current-password" id="pinCurrent" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+          </label>
+          <label for="pinNew">PIN baru
+            <input aria-label="PIN baru" autocomplete="new-password" id="pinNew" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+          </label>
+          <label for="pinNew2">Ulangi PIN baru
+            <input aria-label="Ulangi PIN baru" autocomplete="new-password" id="pinNew2" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+          </label>
+        </div>
+        <button type="button" class="secondary-btn pin-change-btn" id="pinChangeBtn" onclick="finChangePin()">Ubah PIN</button>
+        <div class="sub" id="pinChangeMsg" role="status" aria-live="polite">—</div>
+      </div>
+      <div class="card settings-card">
         <h3>Keamanan sesi</h3>
         <div class="sub">Data hanya dapat dibaca setelah login PIN. Token sesi berakhir otomatis dalam 6 jam.</div>
         <div class="setrow">
@@ -1851,6 +1896,7 @@ function finShowAuthGate(message){
   if(gate) gate.hidden = false;
   var content = document.getElementById('dashboardContent');
   if(content) content.style.display = 'none';
+  if(typeof finToggleSetup === 'function') finToggleSetup(false);
   if(message) finAuthMessage(message, false);
   var pin = document.getElementById('authPin');
   if(pin){ pin.value = ''; setTimeout(function(){ try{ pin.focus(); }catch(e){} }, 80); }
@@ -1859,7 +1905,28 @@ function finHideAuthGate(){
   document.body.classList.remove('fin-auth-locked');
   var gate = document.getElementById('authGate');
   if(gate) gate.hidden = true;
+  if(typeof finToggleSetup === 'function') finToggleSetup(false);
   finAuthMessage('', false);
+}
+function finToggleSetup(show){
+  var isSetup = !!show;
+  var setup = document.getElementById('authSetupForm');
+  var login = document.getElementById('authForm');
+  var setupToggle = document.getElementById('authSetupToggle');
+  var backToggle = document.getElementById('authBackToggle');
+  var title = document.getElementById('authTitle');
+  var copy = document.getElementById('authCopy');
+  if(setup) setup.hidden = !isSetup;
+  if(login) login.hidden = isSetup;
+  if(setupToggle) setupToggle.hidden = isSetup;
+  if(backToggle) backToggle.hidden = !isSetup;
+  if(title) title.textContent = isSetup ? 'Buat PIN pertama' : 'Buka dashboard';
+  if(copy) copy.textContent = isSetup
+    ? 'Masukkan kode setup sekali pakai dari Script Properties Apps Script, lalu tentukan PIN 6 angka. Kode hanya bisa dipakai sampai PIN berhasil dibuat.'
+    : 'Masukkan PIN 6 angka untuk membuka data keuangan. PIN dikirim ke Apps Script dan tidak disimpan di perangkat ini.';
+  finAuthMessage('', false);
+  var focus = document.getElementById(isSetup ? 'authSetupCode' : 'authPin');
+  if(focus) setTimeout(function(){ try{ focus.focus(); }catch(e){} }, 40);
 }
 function finLockDashboard(){
   var token = finSessionToken();
@@ -1873,6 +1940,59 @@ function finLockDashboard(){
   var content = document.getElementById('dashboardContent');
   if(content) content.style.display = 'none';
   finShowAuthGate('Dashboard dikunci. Masukkan PIN untuk membuka lagi.');
+}
+async function finChangePin(){
+  var currentEl = document.getElementById('pinCurrent');
+  var newEl = document.getElementById('pinNew');
+  var new2El = document.getElementById('pinNew2');
+  var btn = document.getElementById('pinChangeBtn');
+  var msg = document.getElementById('pinChangeMsg');
+  var setMsg = function(text, ok){
+    if(!msg) return;
+    msg.textContent = text || '—';
+    msg.style.color = ok ? 'var(--primary)' : 'var(--negative)';
+  };
+  var current = currentEl ? String(currentEl.value || '').replace(/\D/g, '').slice(0, 6) : '';
+  var next = newEl ? String(newEl.value || '').replace(/\D/g, '').slice(0, 6) : '';
+  var next2 = new2El ? String(new2El.value || '').replace(/\D/g, '').slice(0, 6) : '';
+  if(!/^\d{6}$/.test(current)){
+    setMsg('Masukkan PIN sekarang 6 angka.', false);
+    if(currentEl) currentEl.focus();
+    return;
+  }
+  if(!/^\d{6}$/.test(next)){
+    setMsg('PIN baru harus 6 angka.', false);
+    if(newEl) newEl.focus();
+    return;
+  }
+  if(next !== next2){
+    setMsg('Ulangi PIN baru dengan benar.', false);
+    if(new2El) new2El.focus();
+    return;
+  }
+  if(next === current){
+    setMsg('PIN baru harus berbeda dari PIN sekarang.', false);
+    if(newEl) newEl.focus();
+    return;
+  }
+  if(btn) btn.disabled = true;
+  setMsg('Menyimpan PIN baru…', true);
+  try{
+    var j = await finPost('change-pin', { pin: current, newPin: next, pinConfirm: next2 });
+    if(!j || !j.ok) throw new Error((j && j.error) || 'PIN gagal diubah.');
+    finClearSession();
+    if(currentEl) currentEl.value = '';
+    if(newEl) newEl.value = '';
+    if(new2El) new2El.value = '';
+    allTrx = []; opnameData = []; anggaranT1 = []; anggaranT2 = []; tabungData = []; window.__lastFiltered = [];
+    setMsg('PIN berhasil diubah. Login ulang dengan PIN baru.', true);
+    finShowAuthGate('');
+    finAuthMessage('PIN berhasil diubah. Login dengan PIN baru.', true);
+  }catch(e){
+    setMsg((e && e.message) || 'PIN gagal diubah. Periksa koneksi.', false);
+  }finally{
+    if(btn) btn.disabled = false;
+  }
 }
 function finEnsureEndpoint(){
   if(FIN_ENDPOINT && FIN_ENDPOINT.indexOf('http') === 0) return Promise.resolve(FIN_ENDPOINT);
@@ -1948,6 +2068,56 @@ async function finLogin(ev){
     await loadAll();
   }catch(e){
     finAuthMessage((e && e.message) || 'Gagal login. Periksa koneksi.', false);
+    finClearSession();
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+async function finSetup(ev){
+  if(ev && ev.preventDefault) ev.preventDefault();
+  var codeEl = document.getElementById('authSetupCode');
+  var pinEl = document.getElementById('authNewPin');
+  var pin2El = document.getElementById('authNewPin2');
+  var btn = document.getElementById('authSetupBtn');
+  var code = codeEl ? String(codeEl.value || '').trim() : '';
+  var pin = pinEl ? String(pinEl.value || '').replace(/\D/g, '').slice(0, 6) : '';
+  var pin2 = pin2El ? String(pin2El.value || '').replace(/\D/g, '').slice(0, 6) : '';
+  if(!code){
+    finAuthMessage('Masukkan kode setup sekali pakai.', false);
+    if(codeEl) codeEl.focus();
+    return;
+  }
+  if(!/^\d{6}$/.test(pin)){
+    finAuthMessage('PIN baru harus 6 angka.', false);
+    if(pinEl) pinEl.focus();
+    return;
+  }
+  if(pin !== pin2){
+    finAuthMessage('Ulangi PIN baru dengan benar.', false);
+    if(pin2El) pin2El.focus();
+    return;
+  }
+  if(btn) btn.disabled = true;
+  finAuthMessage('Membuat PIN…', true);
+  try{
+    var endpoint = await finEnsureEndpoint();
+    if(!endpoint || endpoint.indexOf('http') !== 0) throw new Error('Alamat simpan belum termuat. Coba lagi.');
+    var r = await fetch(endpoint, {
+      method:'POST',
+      cache:'no-store',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({action:'setup', setupCode:code, pin:pin, pinConfirm:pin2})
+    });
+    var j = await r.json();
+    if(!j || !j.ok || !j.token) throw new Error((j && j.error) || 'PIN gagal dibuat.');
+    finSaveSession(j);
+    if(codeEl) codeEl.value = '';
+    if(pinEl) pinEl.value = '';
+    if(pin2El) pin2El.value = '';
+    finHideAuthGate();
+    await loadAll();
+  }catch(e){
+    finAuthMessage((e && e.message) || 'Gagal membuat PIN. Periksa koneksi.', false);
     finClearSession();
   }finally{
     if(btn) btn.disabled = false;
