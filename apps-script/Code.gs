@@ -945,7 +945,7 @@ function actTargetSave(b) {
     return out({ ok: false, code: 400, error: 'Deadline tidak valid.' });
   }
   var sh = sheetTab(TAB_TABUNGAN);
-  var progress = goal > 0 ? Math.round(got / goal * 1000) / 10 : 0;
+  var progress = goal > 0 ? Math.round(got / goal * 10000) / 10000 : 0;
   var sisa = Math.max(0, goal - got);
 
   var saved = withLock_(function () {
@@ -959,7 +959,7 @@ function actTargetSave(b) {
       nama, goal, got, sisa, progress, deadline ? tglObj(deadlineVal) : '', status
     ]]);
     sh.getRange(row, 2, 1, 3).setNumberFormat('#,##0');
-    sh.getRange(row, 5).setNumberFormat('0.0"%"');
+    sh.getRange(row, 5).setNumberFormat('0.0%');
     if (deadline) sh.getRange(row, 6).setNumberFormat('dd MMM yyyy');
     return row;
   });
