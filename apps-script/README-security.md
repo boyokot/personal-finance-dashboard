@@ -72,6 +72,44 @@ frontend baru tidak bisa membaca backend lama.
 > `endpoint.txt` dan mengarahkan dashboard ke server lama. Pastikan
 > `endpoint.txt` berisi URL `/exec` Apps Script yang baru.
 
+## 2b. Master data & ekspor (v1.1.0)
+
+Backend v1.1.0 menambahkan tab **Akun**, **Kategori Master**, dan **Rencana**.
+Tab dibuat otomatis saat `data` pertama kali dibaca setelah deploy. Isinya
+diisi dari data nyata yang sudah ada:
+
+- **Akun** dari nama akun di `Opname`, `Transaksi` (kolom Akun dan Akun
+  Tujuan/Pihak), serta kolom Akun pada tab lama `Kategori`, tanpa daftar akun
+  dummy.
+- **Kategori Master** dari `Anggaran`, `Transaksi`, dan tab lama `Kategori`.
+  Tab lama `Kategori` tidak diubah atau dihapus; tab ini hanya menjadi sumber
+  seed agar kategori lama tidak hilang.
+- **Rencana** dari baseline dan alokasi saving yang sebelumnya tertanam di
+  frontend. Baseline bisa diubah dari Pengaturan.
+
+Status migrasi disimpan di Script Property `MASTER_DATA_V1`. Jangan menghapus
+properti itu kecuali memang ingin melakukan seed ulang pada tab yang kosong.
+
+Aksi baru yang memerlukan sesi + PIN:
+
+`akun/save`, `akun/delete` (arsip), `kategori/save`, `kategori/delete`
+(arsip), `kategori/merge`, `target/save`, `target/delete`, `rencana/save`,
+`rencana/delete`, dan `verify-pin` untuk membuka unduhan.
+
+**Sebelum deploy:**
+
+1. Buat salinan spreadsheet (File → Make a copy) sebagai backup.
+2. Deploy `Code.gs` lebih dulu, lalu buka dashboard baru.
+3. Buka **Pengaturan → Keuangan** dan pastikan daftar akun/kategori/target/
+   rencana terbaca. Jangan menulis data selama proses deploy.
+4. Ekspor JSON lengkap sebagai backup tambahan. File ekspor tidak memuat PIN,
+   hash, salt, atau token; CSV/JSON tetap memerlukan PIN yang diketik di
+   Pengaturan.
+
+Kolom Tier 1/Tier 2 di `Anggaran` masih dipertahankan agar kompatibel dengan
+backend lama. Frontend tidak lagi menampilkan Tier 2 dan mengirim nilai Tier 1
+untuk kedua kolom sampai migrasi kolom dilakukan terpisah setelah backup.
+
 ## 3. Buat PIN pertama dari dashboard
 
 1. Buka halaman login dashboard versi baru.
@@ -114,7 +152,7 @@ Ini wajib agar data lama tidak tetap dapat dibaca publik:
 Setelah backend terpasang dan diuji:
 
 - Deploy `index.html`, `spending-limit.html`, `endpoint.txt`, dan `latest.html`
-  dari branch `security-financial-fix`.
+  dari branch yang sudah diuji.
 - Cache GitHub Pages bisa sampai 10 menit; gunakan `latest.html` atau query
   `?v=...` untuk memastikan versi baru.
 - Jangan memasukkan PIN, hash, salt, token, atau isi transaksi ke issue/log.

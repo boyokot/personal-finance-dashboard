@@ -27,6 +27,10 @@ var TAB = 'Transaksi';
 var TAB_ANG = 'Anggaran';
 var TAB_OPNAME = 'Opname';
 var TAB_TABUNGAN = 'Target Tabungan';
+var TAB_AKUN = 'Akun';
+var TAB_KATEGORI = 'Kategori Master';
+var TAB_RENCANA = 'Rencana';
+var MASTER_DATA_KEY = 'MASTER_DATA_V1';
 var TZ = 'Asia/Jakarta';
 var FOLDER_DEFAULT = 'Bukti Keuangan Pribadi';
 var HDR_H = 'Akun Tujuan / Pihak';
@@ -108,11 +112,21 @@ function doPost(e) {
     // Seluruh aksi tulis tetap memerlukan PIN, di samping token sesi.
     if (!pinOk(b.pin)) return out({ ok: false, code: 403, error: 'PIN salah' });
 
+    if (action === 'verify-pin') return out({ ok: true, verified: true });
     if (action === 'add') return actAdd(b);
     if (action === 'update') return actUpdate(b);
     if (action === 'delete') return actDelete(b);
     if (action === 'anggaran/save') return actAngSave(b);
     if (action === 'anggaran/delete') return actAngDelete(b);
+    if (action === 'akun/save') return actAkunSave(b);
+    if (action === 'akun/delete') return actAkunArchive(b);
+    if (action === 'kategori/save') return actKategoriSave(b);
+    if (action === 'kategori/delete') return actKategoriArchive(b);
+    if (action === 'kategori/merge') return actKategoriMerge(b);
+    if (action === 'target/save') return actTargetSave(b);
+    if (action === 'target/delete') return actTargetDelete(b);
+    if (action === 'rencana/save') return actRencanaSave(b);
+    if (action === 'rencana/delete') return actRencanaDelete(b);
 
     return out({ ok: false, code: 404, error: 'action tidak dikenal: ' + action });
   } catch (err) {
@@ -314,11 +328,15 @@ function clearSetupFail_() {
 /* ======================= BACA DATA ======================= */
 
 function readAll_() {
+  ensureMasterData_();
   return {
     trx: readSheetMatrix_(TAB, 9),
     opname: readSheetMatrix_(TAB_OPNAME, 6),
     anggaran: readSheetMatrix_(TAB_ANG, 3),
-    tabungan: readSheetMatrix_(TAB_TABUNGAN, 7)
+    tabungan: readSheetMatrix_(TAB_TABUNGAN, 7),
+    akun: readSheetMatrix_(TAB_AKUN, 6),
+    kategori: readSheetMatrix_(TAB_KATEGORI, 5),
+    rencana: readSheetMatrix_(TAB_RENCANA, 7)
   };
 }
 
@@ -339,6 +357,177 @@ function readSheetMatrix_(name, width) {
       return v;
     });
   });
+}
+
+/* ======================= MASTER DATA ======================= */
+
+function ensureMasterTabs_(ss) {
+  var specs = [
+    { name: TAB_AKUN, headers: ['Nama', 'Tipe', 'Aktif', 'Urutan', 'Default', 'Catatan'] },
+    { name: TAB_KATEGORI, headers: ['Nama', 'Tipe', 'Kelompok', 'Aktif', 'Urutan'] },
+    { name: TAB_RENCANA, headers: ['Jenis', 'Label', 'Nominal', 'Catatan', 'Warna', 'Urutan', 'Aktif'] },
+    { name: TAB_TABUNGAN, headers: ['Nama Target', 'Target (Rp)', 'Terkumpul (Rp)', 'Sisa (Rp)', 'Progress', 'Deadline', 'Status'] }
+  ];
+  for (var i = 0; i < specs.length; i++) {
+    var sh = ss.getSheetByName(specs[i].name);
+    if (!sh) sh = ss.insertSheet(specs[i].name);
+    if (sh.getLastRow() === 0) {
+      sh.getRange(1, 1, 1, specs[i].headers.length).setValues([specs[i].headers]);
+    }
+  }
+}
+
+function ensureMasterData_() {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty(MASTER_DATA_KEY) === '1') {
+    ensureMasterTabs_(SpreadsheetApp.openById(sheetId_()));
+    return;
+  }
+  withLock_(function () {
+    if (props.getProperty(MASTER_DATA_KEY) === '1') {
+      ensureMasterTabs_(SpreadsheetApp.openById(sheetId_()));
+      return;
+    }
+    var ss = SpreadsheetApp.openById(sheetId_());
+    ensureMasterTabs_(ss);
+    seedMasterData_(ss);
+    props.setProperty(MASTER_DATA_KEY, '1');
+  });
+}
+
+function seedMasterData_(ss) {
+  var akunSh = ss.getSheetByName(TAB_AKUN);
+  var trSh = ss.getSheetByName(TAB);
+  if (akunSh.getLastRow() < 2) {
+    var names = [], seen = {};
+    function addName(n) {
+      n = cleanText_(n, 40);
+      if (!n) return;
+      var key = n.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = 1;
+      names.push(n);
+    }
+    var legacyKatSh = ss.getSheetByName('Kategori');
+    if (legacyKatSh && legacyKatSh.getLastRow() > 1) {
+      var legacyAkunVals = legacyKatSh.getRange(2, 3, legacyKatSh.getLastRow() - 1, 1).getValues();
+      for (var lai = 0; lai < legacyAkunVals.length; lai++) addName(legacyAkunVals[lai][0]);
+    }
+    var opSh = ss.getSheetByName(TAB_OPNAME);
+    if (opSh && opSh.getLastRow() > 1) {
+      var opVals = opSh.getRange(2, 2, opSh.getLastRow() - 1, 1).getValues();
+      for (var oi = 0; oi < opVals.length; oi++) addName(opVals[oi][0]);
+    }
+    if (trSh && trSh.getLastRow() > 1) {
+      var trVals = trSh.getRange(2, 1, trSh.getLastRow() - 1, 8).getValues();
+      for (var ti = 0; ti < trVals.length; ti++) {
+        addName(trVals[ti][5]);
+        addName(trVals[ti][7]);
+      }
+    }
+    if (names.length) {
+      var akunRows = names.map(function (n, idx) {
+        return [n, inferAkunTipe_(n), true, idx + 1, n === 'Tunai' || (idx === 0 && names.indexOf('Tunai') < 0), ''];
+      });
+      akunSh.getRange(2, 1, akunRows.length, 6).setValues(akunRows);
+    }
+  }
+
+  var katSh = ss.getSheetByName(TAB_KATEGORI);
+  if (katSh.getLastRow() < 2) {
+    var catMap = {}, catOrder = [];
+    function addCat(n, tipe) {
+      n = cleanText_(n, 60);
+      if (!n) return;
+      var key = n.toLowerCase();
+      if (!catMap[key]) { catMap[key] = { nama: n, types: {} }; catOrder.push(key); }
+      if (tipe) catMap[key].types[tipe] = true;
+    }
+    var angSh = ss.getSheetByName(TAB_ANG);
+    if (angSh && angSh.getLastRow() > 1) {
+      var angVals = angSh.getRange(2, 1, angSh.getLastRow() - 1, 1).getValues();
+      for (var ai = 0; ai < angVals.length; ai++) addCat(angVals[ai][0], 'Pengeluaran');
+    }
+    if (trSh && trSh.getLastRow() > 1) {
+      var trCatVals = trSh.getRange(2, 3, trSh.getLastRow() - 1, 2).getValues();
+      for (var ci = 0; ci < trCatVals.length; ci++) addCat(trCatVals[ci][0], trCatVals[ci][1]);
+    }
+    var legacyKatSh = ss.getSheetByName('Kategori');
+    if (legacyKatSh && legacyKatSh.getLastRow() > 1) {
+      var legacyKatVals = legacyKatSh.getRange(2, 1, legacyKatSh.getLastRow() - 1, 2).getValues();
+      for (var lki = 0; lki < legacyKatVals.length; lki++) {
+        addCat(legacyKatVals[lki][0], 'Pemasukan');
+        addCat(legacyKatVals[lki][1], 'Pengeluaran');
+      }
+    }
+    if (catOrder.length) {
+      var katRows = catOrder.map(function (key, idx) {
+        var item = catMap[key];
+        var types = Object.keys(item.types);
+        var tipe = types.length === 1 ? types[0] : (types.length > 1 ? 'Umum' : 'Pengeluaran');
+        return [item.nama, tipe, '', true, idx + 1];
+      });
+      katSh.getRange(2, 1, katRows.length, 5).setValues(katRows);
+    }
+  }
+
+  var renSh = ss.getSheetByName(TAB_RENCANA);
+  if (renSh.getLastRow() < 2) {
+    renSh.getRange(2, 1, 4, 7).setValues([
+      ['Baseline', 'Pemasukan bulanan', 3100000, 'Baseline rencana awal', '#0e7a4f', 1, true],
+      ['Saving', 'Persiapan Menikah', 1000000, 'Dana fleksibel untuk horizon 1–2 tahun', '#4dabf7', 2, true],
+      ['Saving', 'Tabungan Gadai Sawah', 500000, 'Target Rp30 juta, setor Rp500rb/bulan', '#ff8787', 3, true],
+      ['Saving', 'Dana Lebaran', 125000, 'Target tahunan Rp1,5 juta', '#ffd43b', 4, true]
+    ]);
+  }
+}
+
+function inferAkunTipe_(name) {
+  var n = String(name || '').toLowerCase();
+  if (/piutang/.test(n)) return 'Piutang';
+  if (/spaylater|kartu kredit|jenius/.test(n)) return 'Kewajiban';
+  return 'Aset';
+}
+
+function boolVal_(v, fallback) {
+  if (v === true || v === 1) return true;
+  if (v === false || v === 0) return false;
+  if (typeof v === 'string') {
+    var s = v.toLowerCase().trim();
+    if (s === 'false' || s === '0' || s === 'tidak' || s === 'no') return false;
+    if (s === 'true' || s === '1' || s === 'ya' || s === 'yes') return true;
+  }
+  return fallback;
+}
+
+function replaceExact_(tabName, col, from, to) {
+  from = String(from || '').trim();
+  to = String(to || '').trim();
+  if (!from || !to || from === to) return 0;
+  var sh = sheetTab(tabName);
+  var last = sh.getLastRow();
+  if (last < 2) return 0;
+  var rng = sh.getRange(2, col, last - 1, 1);
+  var vals = rng.getValues();
+  var changed = 0;
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][0] || '').trim() === from) {
+      vals[i][0] = to;
+      changed++;
+    }
+  }
+  if (changed) rng.setValues(vals);
+  return changed;
+}
+
+function appendOpname_(name, actual) {
+  var sh = sheetTab(TAB_OPNAME);
+  var row = lastDataRow(sh) + 1;
+  var today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  var amount = Math.round(toNum(actual));
+  sh.getRange(row, 1, 1, 6).setValues([[tglObj(today), name, amount, amount, 0, 'Saldo awal akun baru']]);
+  sh.getRange(row, 1).setNumberFormat('dd MMM yyyy');
+  sh.getRange(row, 3, 1, 3).setNumberFormat('#,##0');
 }
 
 function listRows(n) {
@@ -563,6 +752,294 @@ function actAngDelete(b) {
     sh.deleteRow(row);
   });
   return out({ ok: true, row: row, mode: 'apps-script', items: readAnggaran() });
+}
+
+/* ======================= AKSI MASTER DATA ======================= */
+
+function actAkunSave(b) {
+  var nama = cleanText_(b.nama, 40);
+  if (!nama) return out({ ok: false, code: 400, error: 'Nama akun wajib diisi.' });
+  var tipe = cleanText_(b.tipe, 20) || 'Aset';
+  if (['Aset', 'Kewajiban', 'Piutang'].indexOf(tipe) < 0) tipe = 'Aset';
+  var row = intVal(b.row);
+  var aktif = boolVal_(b.aktif, true);
+  var urutan = intVal(b.urutan);
+  if (!urutan) urutan = 99;
+  var defaultFlag = boolVal_(b.default, false) && aktif;
+  var catatan = cleanText_(b.catatan, 200);
+  var saldoAwal = toNum(b.saldoAwal);
+  var sh = sheetTab(TAB_AKUN);
+
+  var saved = withLock_(function () {
+    var last = sh.getLastRow();
+    if (last < 1) throw new Error('Tab Akun belum siap.');
+    var oldName = '';
+    if (row) {
+      if (row < 2 || row > last) throw new Error('Akun tidak ditemukan.');
+      oldName = cleanText_(sh.getRange(row, 1).getValue(), 40);
+    }
+    if (last > 1) {
+      var vals = sh.getRange(2, 1, last - 1, 6).getValues();
+      for (var i = 0; i < vals.length; i++) {
+        if (i + 2 === row) continue;
+        if (String(vals[i][0] || '').trim().toLowerCase() === nama.toLowerCase()) {
+          throw new Error('Nama akun sudah dipakai: ' + vals[i][0]);
+        }
+      }
+      if (defaultFlag) {
+        var defaults = sh.getRange(2, 5, last - 1, 1).getValues();
+        for (var d = 0; d < defaults.length; d++) {
+          defaults[d][0] = (d + 2 === row);
+        }
+        sh.getRange(2, 5, last - 1, 1).setValues(defaults);
+      }
+    }
+    if (!row) row = lastDataRow(sh) + 1;
+    sh.getRange(row, 1, 1, 6).setValues([[nama, tipe, aktif, urutan, defaultFlag, catatan]]);
+    if (oldName && oldName !== nama) {
+      replaceExact_(TAB_OPNAME, 2, oldName, nama);
+      replaceExact_(TAB, 6, oldName, nama);
+      replaceExact_(TAB, 8, oldName, nama);
+    }
+    if (!oldName) appendOpname_(nama, saldoAwal);
+    return row;
+  });
+
+  return out({ ok: true, row: saved, mode: 'apps-script' });
+}
+
+function actAkunArchive(b) {
+  var row = intVal(b.row);
+  if (row < 2) return out({ ok: false, code: 400, error: 'row tidak valid' });
+  var sh = sheetTab(TAB_AKUN);
+  withLock_(function () {
+    if (row > sh.getLastRow()) throw new Error('Akun tidak ditemukan.');
+    sh.getRange(row, 3).setValue(false);
+    sh.getRange(row, 5).setValue(false);
+  });
+  return out({ ok: true, row: row, mode: 'apps-script' });
+}
+
+function actKategoriSave(b) {
+  var nama = cleanText_(b.nama, 60);
+  if (!nama) return out({ ok: false, code: 400, error: 'Nama kategori wajib diisi.' });
+  var tipe = cleanText_(b.tipe, 20) || 'Pengeluaran';
+  if (['Pemasukan', 'Pengeluaran', 'Umum', 'Transfer', 'Hutang', 'Piutang'].indexOf(tipe) < 0) tipe = 'Pengeluaran';
+  var kelompok = cleanText_(b.kelompok, 40);
+  var aktif = boolVal_(b.aktif, true);
+  var urutan = intVal(b.urutan);
+  if (!urutan) urutan = 99;
+  var row = intVal(b.row);
+  var sh = sheetTab(TAB_KATEGORI);
+
+  var saved = withLock_(function () {
+    var last = sh.getLastRow();
+    if (last < 1) throw new Error('Tab Kategori belum siap.');
+    var oldName = '';
+    if (row) {
+      if (row < 2 || row > last) throw new Error('Kategori tidak ditemukan.');
+      oldName = cleanText_(sh.getRange(row, 1).getValue(), 60);
+    }
+    if (last > 1) {
+      var vals = sh.getRange(2, 1, last - 1, 5).getValues();
+      for (var i = 0; i < vals.length; i++) {
+        if (i + 2 === row) continue;
+        if (String(vals[i][0] || '').trim().toLowerCase() === nama.toLowerCase()) {
+          throw new Error('Nama kategori sudah dipakai: ' + vals[i][0]);
+        }
+      }
+    }
+    if (oldName && oldName !== nama && budgetRowByName_(nama)) {
+      throw new Error('Kategori anggaran dengan nama itu sudah ada. Gunakan Gabung.');
+    }
+    if (!row) row = lastDataRow(sh) + 1;
+    sh.getRange(row, 1, 1, 5).setValues([[nama, tipe, kelompok, aktif, urutan]]);
+    if (oldName && oldName !== nama) {
+      replaceExact_(TAB, 3, oldName, nama);
+      replaceExact_(TAB_ANG, 1, oldName, nama);
+    }
+    return row;
+  });
+
+  return out({ ok: true, row: saved, mode: 'apps-script' });
+}
+
+function actKategoriArchive(b) {
+  var row = intVal(b.row);
+  if (row < 2) return out({ ok: false, code: 400, error: 'row tidak valid' });
+  var sh = sheetTab(TAB_KATEGORI);
+  withLock_(function () {
+    if (row > sh.getLastRow()) throw new Error('Kategori tidak ditemukan.');
+    sh.getRange(row, 4).setValue(false);
+  });
+  return out({ ok: true, row: row, mode: 'apps-script' });
+}
+
+function budgetRowByName_(name) {
+  var sh = sheetTab(TAB_ANG);
+  var last = sh.getLastRow();
+  if (last < 2) return 0;
+  var vals = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][0] || '').trim().toLowerCase() === String(name || '').trim().toLowerCase()) return i + 2;
+  }
+  return 0;
+}
+
+function actKategoriMerge(b) {
+  var from = cleanText_(b.from, 60);
+  var to = cleanText_(b.to, 60);
+  if (!from || !to) return out({ ok: false, code: 400, error: 'Kategori asal dan tujuan wajib diisi.' });
+  if (from.toLowerCase() === to.toLowerCase()) return out({ ok: false, code: 400, error: 'Pilih kategori tujuan yang berbeda.' });
+  var katSh = sheetTab(TAB_KATEGORI);
+  var trSh = sheetTab(TAB);
+  var angSh = sheetTab(TAB_ANG);
+
+  var result = withLock_(function () {
+    var katLast = katSh.getLastRow();
+    if (katLast < 2) throw new Error('Kategori belum tersedia.');
+    var katVals = katSh.getRange(2, 1, katLast - 1, 5).getValues();
+    var fromRow = 0, toRow = 0;
+    for (var i = 0; i < katVals.length; i++) {
+      var n = String(katVals[i][0] || '').trim();
+      if (n.toLowerCase() === from.toLowerCase()) fromRow = i + 2;
+      if (n.toLowerCase() === to.toLowerCase()) toRow = i + 2;
+    }
+    if (!fromRow) throw new Error('Kategori asal tidak ditemukan.');
+    if (!toRow) throw new Error('Kategori tujuan tidak ditemukan.');
+    if (boolVal_(katVals[toRow - 2][3], true) === false) throw new Error('Kategori tujuan sedang diarsipkan.');
+
+    var moved = replaceExact_(TAB, 3, from, to);
+
+    var fromBudget = budgetRowByName_(from);
+    var toBudget = budgetRowByName_(to);
+    if (fromBudget) {
+      if (toBudget) {
+        var a = angSh.getRange(fromBudget, 1, 1, 3).getValues()[0];
+        var t = angSh.getRange(toBudget, 1, 1, 3).getValues()[0];
+        var total1 = toNum(t[1]) + toNum(a[1]);
+        var total2 = toNum(t[2]) + toNum(a[2]);
+        angSh.getRange(toBudget, 1, 1, 3).setValues([[to, rp(total1), rp(total2)]]);
+        angSh.deleteRow(fromBudget);
+      } else {
+        angSh.getRange(fromBudget, 1).setValue(to);
+      }
+    }
+    katSh.getRange(fromRow, 4).setValue(false);
+    return { moved: moved, budgets: (fromBudget ? 1 : 0) + (toBudget ? 1 : 0) };
+  });
+
+  return out({ ok: true, mode: 'apps-script', moved: result.moved, budgets: result.budgets });
+}
+
+function actTargetSave(b) {
+  var nama = cleanText_(b.nama, 80);
+  if (!nama) return out({ ok: false, code: 400, error: 'Nama target wajib diisi.' });
+  var goal = Math.max(0, Math.round(toNum(b.target)));
+  var got = Math.max(0, Math.round(toNum(b.terkumpul)));
+  if (goal > 1000000000000 || got > 1000000000000) return out({ ok: false, code: 400, error: 'Nominal target terlalu besar.' });
+  var row = intVal(b.row);
+  var status = cleanText_(b.status, 40) || 'Berjalan';
+  var deadline = String(b.deadline || '').trim();
+  if (deadline && !parseTextDate(deadline) && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+    return out({ ok: false, code: 400, error: 'Deadline tidak valid.' });
+  }
+  var sh = sheetTab(TAB_TABUNGAN);
+  var progress = goal > 0 ? Math.round(got / goal * 1000) / 10 : 0;
+  var sisa = Math.max(0, goal - got);
+
+  var saved = withLock_(function () {
+    if (row) {
+      if (row < 2 || row > sh.getLastRow()) throw new Error('Target tidak ditemukan.');
+    } else {
+      row = lastDataRow(sh) + 1;
+    }
+    var deadlineVal = deadline ? (parseTextDate(deadline) || deadline) : '';
+    sh.getRange(row, 1, 1, 7).setValues([[
+      nama, goal, got, sisa, progress, deadline ? tglObj(deadlineVal) : '', status
+    ]]);
+    sh.getRange(row, 2, 1, 3).setNumberFormat('#,##0');
+    sh.getRange(row, 5).setNumberFormat('0.0"%"');
+    if (deadline) sh.getRange(row, 6).setNumberFormat('dd MMM yyyy');
+    return row;
+  });
+
+  return out({ ok: true, row: saved, mode: 'apps-script' });
+}
+
+function actTargetDelete(b) {
+  var row = intVal(b.row);
+  if (row < 2) return out({ ok: false, code: 400, error: 'row tidak valid' });
+  var sh = sheetTab(TAB_TABUNGAN);
+  withLock_(function () {
+    if (row > sh.getLastRow()) throw new Error('Target tidak ditemukan.');
+    sh.deleteRow(row);
+  });
+  return out({ ok: true, row: row, mode: 'apps-script' });
+}
+
+function actRencanaSave(b) {
+  var jenis = cleanText_(b.jenis, 20) || 'Saving';
+  if (jenis !== 'Baseline' && jenis !== 'Saving') jenis = 'Saving';
+  var label = cleanText_(b.label, 80);
+  if (!label) return out({ ok: false, code: 400, error: 'Label rencana wajib diisi.' });
+  var nominal = Math.max(0, Math.round(toNum(b.nominal)));
+  var catatan = cleanText_(b.catatan, 200);
+  var warna = String(b.warna || '#4dabf7').trim();
+  if (!/^#[0-9a-f]{6}$/i.test(warna)) warna = '#4dabf7';
+  var urutan = intVal(b.urutan);
+  if (!urutan) urutan = 99;
+  var aktif = boolVal_(b.aktif, true);
+  var row = intVal(b.row);
+  var sh = sheetTab(TAB_RENCANA);
+
+  var saved = withLock_(function () {
+    var last = sh.getLastRow();
+    if (last < 1) throw new Error('Tab Rencana belum siap.');
+    if (jenis === 'Baseline') {
+      var vals = last > 1 ? sh.getRange(2, 1, last - 1, 7).getValues() : [];
+      var baselineRow = 0;
+      for (var i = 0; i < vals.length; i++) {
+        if (String(vals[i][0] || '').trim() === 'Baseline') { baselineRow = i + 2; break; }
+      }
+      row = baselineRow || (lastDataRow(sh) + 1);
+      sh.getRange(row, 1, 1, 7).setValues([['Baseline', label, nominal, catatan, warna, 1, true]]);
+      if (vals.length) {
+        for (var j = 0; j < vals.length; j++) {
+          if (j + 2 !== row && String(vals[j][0] || '').trim() === 'Baseline') {
+            sh.getRange(j + 2, 7).setValue(false);
+          }
+        }
+      }
+      return row;
+    }
+    if (row) {
+      if (row < 2 || row > last) throw new Error('Rencana tidak ditemukan.');
+      if (String(sh.getRange(row, 1).getValue() || '').trim() === 'Baseline') {
+        throw new Error('Baris baseline hanya bisa diubah lewat form baseline.');
+      }
+    } else {
+      row = lastDataRow(sh) + 1;
+    }
+    sh.getRange(row, 1, 1, 7).setValues([[jenis, label, nominal, catatan, warna, urutan, aktif]]);
+    return row;
+  });
+
+  return out({ ok: true, row: saved, mode: 'apps-script' });
+}
+
+function actRencanaDelete(b) {
+  var row = intVal(b.row);
+  if (row < 2) return out({ ok: false, code: 400, error: 'row tidak valid' });
+  var sh = sheetTab(TAB_RENCANA);
+  withLock_(function () {
+    if (row > sh.getLastRow()) throw new Error('Rencana tidak ditemukan.');
+    if (String(sh.getRange(row, 1).getValue() || '').trim() === 'Baseline') {
+      throw new Error('Baseline tidak bisa dihapus; ubah nominalnya saja.');
+    }
+    sh.deleteRow(row);
+  });
+  return out({ ok: true, row: row, mode: 'apps-script' });
 }
 
 /* ======================= ID & IDEMPOTENSI ======================= */
