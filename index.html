@@ -734,7 +734,6 @@ td.num { font-weight: 800; }
 .saving-bar { height: 5px; margin-top: 7px; background: #e5ece5 !important; border-radius: 99px; overflow: hidden; }
 .saving-bar > i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 .saving-amount { flex: none; color: var(--primary); font-size: 11.5px; font-weight: 800; white-space: nowrap; }
-.tier-label { margin-left: 6px; color: var(--primary); font-size: 12px; font-weight: 800; white-space: nowrap; }
 .anggaran-status {
   margin-top: 11px;
   padding: 11px 12px;
@@ -774,41 +773,8 @@ td.num { font-weight: 800; }
 .settings-card + .settings-card { margin-top: 10px; }
 .settings-card h3 { margin-bottom: 5px; }
 .settings-card .sub { margin-bottom: 10px; font-size: 10.5px; }
-#setEndpoint {
-  display: block;
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font: 10px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
-  word-break: break-all;
-}
 .setrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
-#setTier { display: flex; gap: 7px; flex-wrap: wrap; }
-#setTier .tier-btn { flex: 1 1 140px; }
-.tier-btn {
-  min-height: 38px;
-  padding: 8px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 750;
-  cursor: pointer;
-}
-.tier-btn.active-t1, .tier-btn.active-t2 { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
-.tier-btn.inactive:hover { background: var(--surface-2); }
 #setTema button.aktif { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
-#setInfo { font-size: 10.5px; line-height: 1.7; }
-#setInfo strong { color: var(--text); }
-#setPingMsg { margin-top: 8px; font-size: 10.5px; }
-.pin-form { display: grid; gap: 8px; }
-.pin-form label { color: var(--muted); font-size: 10px; font-weight: 800; }
-.pin-form input { display: block; width: 100%; height: 42px; margin-top: 4px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-size: 16px; font-weight: 800; letter-spacing: .3em; }
-.pin-form input:focus { outline: 0; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 .pin-change-btn { width: 100%; margin-top: 9px; }
 #pinChangeMsg { min-height: 16px; margin-top: 8px; margin-bottom: 0; }
 
@@ -888,30 +854,36 @@ td.num { font-weight: 800; }
 
 /* ---------- floating add ---------- */
 
-.header-add {
+.fab {
+  position: fixed;
+  right: 18px;
+  right: max(18px, calc((100vw - 1180px) / 2 + 18px));
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 50;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 58px;
+  height: 58px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: var(--primary);
   color: #fff;
-  font-size: 22px;
+  font-size: 30px;
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 5px 14px rgba(14, 122, 79, .22);
+  box-shadow: 0 12px 26px rgba(14, 122, 79, .28);
+  transition: transform .15s ease;
 }
-/* Layar Transaksi sudah punya tombol "+ Catat" sendiri. */
-body[data-screen="transaksi"] .header-add { display: none; }
+.fab:active { transform: scale(.94); }
+body.fin-auth-locked .fab, body.fab-hidden .fab { display: none; }
 @media (max-width: 360px) {
   .refresh-badge { display: none; }
 }
 
 /* ===== form / modal ===== */
-#addModal, #angModal, #akunModal {
+#addModal, #angModal, #akunModal, #pinModal {
   --form-bg: #f5f8f4;
   --form-sheet: #ffffff;
   --form-field: #f1f6ef;
@@ -929,7 +901,7 @@ body[data-screen="transaksi"] .header-add { display: none; }
   --form-pill: 999px;
   --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
-#addModal, #angModal {
+#addModal, #angModal, #pinModal {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -941,7 +913,7 @@ body[data-screen="transaksi"] .header-add { display: none; }
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
 }
-#addModal.open, #angModal.open { display: flex; }
+#addModal.open, #angModal.open, #pinModal.open { display: flex; }
 .fin-sheet {
   position: relative;
   display: flex;
@@ -1407,7 +1379,6 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       </div>
       <div class="header-actions">
         <span class="refresh-badge" id="refreshBadge" title="Status data">Memuat…</span>
-        <button class="header-add" type="button" onclick="openAdd()" aria-label="Catat transaksi">+</button>
       </div>
     </div>
     <div class="month-row">
@@ -1486,7 +1457,6 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
     <section class="screen" data-screen="transaksi" id="screen-transaksi" hidden>
       <div class="screen-head">
         <div><div class="eyebrow">Riwayat</div><h2>Transaksi</h2></div>
-        <button type="button" class="primary-btn" onclick="openAdd()">+ Catat</button>
       </div>
       <div class="card filter-card">
         <div class="trx-filter">
@@ -1539,7 +1509,6 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
     <section class="screen" data-screen="target" id="screen-target" hidden>
       <div class="screen-head">
         <div><div class="eyebrow">Rencana</div><h2>Target</h2></div>
-        <span class="tier-label" id="targetPlanLabel">Plan Utama</span>
       </div>
       <div class="target-tabs" id="targetTabs">
         <button type="button" data-target-tab="tabungan" class="on" onclick="showTargetTab('tabungan')">Tabungan</button>
@@ -1560,10 +1529,10 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
           <div class="plan-card tint-lilac"><div class="klabel">Dana Lebaran</div><div class="kvalue yellow" id="cardLebaran">Rp125rb</div><div class="sub" id="cardLebaranSub">Setoran bulanan, target Rp1,5jt</div></div>
         </div>
 
-        <div class="section-head"><div><div class="eyebrow">Alokasi bulanan</div><h2>Rencana saving &amp; investasi <span class="tier-label" id="savingTierLabel">Plan Utama</span></h2></div></div>
+        <div class="section-head"><div><div class="eyebrow">Alokasi bulanan</div><h2>Rencana saving &amp; investasi</h2></div></div>
         <div class="card">
           <div id="savingPlanBody"></div>
-          <div class="stat-sub" id="savingPlanNote" style="margin-top:10px">Pembagian bulanan mengikuti plan aktif.</div>
+          <div class="stat-sub" id="savingPlanNote" style="margin-top:10px">Pembagian bulanan dari baseline pemasukan.</div>
         </div>
 
         <div class="section-head"><div><div class="eyebrow">Progress</div><h2>Target tabungan</h2></div></div>
@@ -1581,7 +1550,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       <div class="target-panel" id="target-anggaran" hidden>
         <div class="card">
           <div class="card-head"><div><h3>Kelola anggaran</h3><div class="sub" style="margin-top:3px">Atur batas pengeluaran per kategori.</div></div><button type="button" class="primary-btn" onclick="angAddNew()" aria-label="Tambah anggaran kategori">+ Anggaran</button></div>
-          <div class="stat-sub">Anggaran mengikuti tier yang aktif: <strong id="tierLabel">Plan Utama</strong>.</div>
+          <div class="stat-sub">Batas pengeluaran bulanan per kategori.</div>
         </div>
         <div class="section-head"><div><div class="eyebrow">Realisasi</div><h2>Anggaran bulanan</h2></div></div>
         <div class="card table-card">
@@ -1630,25 +1599,6 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         <div><div class="eyebrow">Preferensi</div><h2>Pengaturan</h2></div>
       </div>
       <div class="card settings-card">
-        <h3>Alamat simpan</h3>
-        <div class="sub">Alamat yang dipakai untuk menyimpan transaksi.</div>
-        <code id="setEndpoint">memuat…</code>
-        <div class="setrow">
-          <button type="button" class="secondary-btn" onclick="setCopyEndpoint()">Salin</button>
-          <button type="button" class="secondary-btn" onclick="setTestPing()">Tes koneksi</button>
-        </div>
-        <div class="sub" id="setPingMsg">—</div>
-      </div>
-      <div class="card settings-card">
-        <h3>Plan &amp; tier anggaran</h3>
-        <div class="sub">Pilih plan yang dipakai untuk anggaran, saving, dan laporan.</div>
-        <div class="setrow" id="setTier">
-          <button type="button" class="tier-btn active-t1" id="tierBtn1" onclick="switchTier(1)" aria-label="Pilih anggaran utama">Plan Utama · Saving 52%</button>
-          <button type="button" class="tier-btn inactive" id="tierBtn2" onclick="switchTier(2)" aria-label="Pilih anggaran ketat">Plan Ketat</button>
-        </div>
-        <div class="sub" id="tierLabelSet" style="margin-top:10px;color:var(--primary);font-weight:800">Plan Utama</div>
-      </div>
-      <div class="card settings-card">
         <h3>Tema aksen</h3>
         <div class="sub">Warna tombol dan menu aktif.</div>
         <div class="setrow" id="setTema">
@@ -1659,31 +1609,12 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       </div>
       <div class="card settings-card">
         <h3>PIN dashboard</h3>
-        <div class="sub">Ganti PIN 6 angka. Setelah berhasil, semua sesi akan logout dan login ulang dengan PIN baru.</div>
-        <div class="pin-form">
-          <label for="pinCurrent">PIN sekarang
-            <input aria-label="PIN sekarang" autocomplete="current-password" id="pinCurrent" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-          </label>
-          <label for="pinNew">PIN baru
-            <input aria-label="PIN baru" autocomplete="new-password" id="pinNew" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-          </label>
-          <label for="pinNew2">Ulangi PIN baru
-            <input aria-label="Ulangi PIN baru" autocomplete="new-password" id="pinNew2" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-          </label>
-        </div>
-        <button type="button" class="secondary-btn pin-change-btn" id="pinChangeBtn" onclick="finChangePin()">Ubah PIN</button>
-        <div class="sub" id="pinChangeMsg" role="status" aria-live="polite">—</div>
+        <div class="sub">PIN 6 angka melindungi data. Setelah PIN diubah, semua sesi lama akan logout.</div>
+        <button type="button" class="secondary-btn pin-change-btn" onclick="openPinModal()">Ubah PIN</button>
       </div>
       <div class="card settings-card">
-        <h3>Keamanan sesi</h3>
-        <div class="sub">Data hanya dapat dibaca setelah login PIN. Token sesi berakhir otomatis dalam 6 jam.</div>
-        <div class="setrow">
-          <button type="button" class="secondary-btn" onclick="finLockDashboard()">Kunci dashboard</button>
-        </div>
-      </div>
-      <div class="card settings-card">
-        <h3>Info aplikasi</h3>
-        <div class="sub" id="setInfo">—</div>
+        <h3>Versi aplikasi</h3>
+        <div class="sub" id="appVersion">—</div>
         <div class="setrow">
           <button type="button" class="secondary-btn" onclick="loadAll()">Muat ulang data</button>
         </div>
@@ -1694,6 +1625,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   <footer class="footer">Live dari Google Sheets · data aktual · tanpa data dummy</footer>
 </div>
 
+<button class="fab" id="fabAdd" type="button" onclick="openAdd()" aria-label="Catat transaksi">+</button>
 
 <nav class="bottomnav" id="bottomnav" aria-label="Menu utama">
   <button type="button" data-nav="beranda" aria-label="Beranda" title="Beranda">
@@ -1824,10 +1756,8 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
     <div class="fin-body">
       <div class="fin-label">Kategori</div>
       <input autocomplete="off" class="fin-input" id="angKat" maxlength="40" placeholder="Contoh: Makanan &amp; Minuman" type="text"/>
-      <div class="fin-label">Anggaran Plan Utama (Rp)</div>
+      <div class="fin-label">Anggaran (Rp)</div>
       <input class="fin-input" id="angT1" inputmode="numeric" min="0" placeholder="200000" step="1000" type="number"/>
-      <div class="fin-label">Anggaran Plan Ketat (Rp)</div>
-      <input class="fin-input" id="angT2" inputmode="numeric" min="0" placeholder="150000" step="1000" type="number"/>
       <div class="fin-label">PIN</div>
       <input class="fin-input" id="angPin" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
       <div class="sub" id="angMsg" style="margin-top:10px"></div>
@@ -1837,10 +1767,31 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   </div>
 </div>
 
+<!-- ================= MODAL UBAH PIN ================= -->
+<div class="modal" id="pinModal" onclick="if(event.target===this)closePinModal()">
+  <div aria-labelledby="pinModalTitle" aria-modal="true" class="fin-sheet" role="dialog">
+    <div class="fin-handle"></div>
+    <div class="fin-head">
+      <h3 id="pinModalTitle">Ubah PIN</h3>
+      <button aria-label="Tutup" class="fin-icon-btn" type="button" onclick="closePinModal()">✕</button>
+    </div>
+    <div class="fin-body">
+      <div class="fin-label">PIN sekarang</div>
+      <input aria-label="PIN sekarang" autocomplete="current-password" class="fin-input" id="pinCurrent" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+      <div class="fin-label">PIN baru</div>
+      <input aria-label="PIN baru" autocomplete="new-password" class="fin-input" id="pinNew" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+      <div class="fin-label">Ulangi PIN baru</div>
+      <input aria-label="Ulangi PIN baru" autocomplete="new-password" class="fin-input" id="pinNew2" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+      <div class="sub" id="pinChangeMsg" role="status" aria-live="polite">—</div>
+      <button class="btnSave" id="pinChangeBtn" onclick="finChangePin()">Simpan PIN baru</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-let allTrx = [], opnameData = [], anggaranT1 = [], anggaranT2 = [], tabungData = [];
-let currentTier = 1;
+const APP_VERSION = 'v1.0.0';
+let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let charts = {};
 const bm = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'Mei':5,'May':5,'Jun':6,'Jul':7,'Agu':8,'Aug':8,'Sep':9,'Okt':10,'Oct':10,'Nov':11,'Des':12,'Dec':12};
 const bn = {1:'Januari',2:'Februari',3:'Maret',4:'April',5:'Mei',6:'Juni',7:'Juli',8:'Agustus',9:'September',10:'Oktober',11:'November',12:'Desember'};
@@ -1849,11 +1800,6 @@ const savingT1 = [
   {label:'Persiapan Menikah',amount:1000000,color:'#4dabf7',note:'Dana fleksibel untuk horizon 1–2 tahun'},
   {label:'Tabungan Gadai Sawah',amount:500000,color:'#ff8787',note:'Target Rp30 juta, setor Rp500rb/bulan'},
   {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Target tahunan Rp1,5 juta'},
-];
-const savingT2 = [
-  {label:'Persiapan Menikah',amount:600000,color:'#4dabf7',note:'Tetap menabung saat pemasukan melemah'},
-  {label:'Tabungan Gadai Sawah',amount:300000,color:'#ff8787',note:'Prioritaskan instrumen likuid dan aman'},
-  {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Kewajiban tahunan tetap berjalan'},
 ];
 
 function rp(v){ v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
@@ -1936,10 +1882,29 @@ function finLockDashboard(){
     }catch(e){}
   }
   finClearSession();
-  allTrx = []; opnameData = []; anggaranT1 = []; anggaranT2 = []; tabungData = []; window.__lastFiltered = [];
+  allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; window.__lastFiltered = [];
   var content = document.getElementById('dashboardContent');
   if(content) content.style.display = 'none';
   finShowAuthGate('Dashboard dikunci. Masukkan PIN untuk membuka lagi.');
+}
+function openPinModal(){
+  var currentEl = document.getElementById('pinCurrent');
+  var newEl = document.getElementById('pinNew');
+  var new2El = document.getElementById('pinNew2');
+  var msg = document.getElementById('pinChangeMsg');
+  if(currentEl) currentEl.value = '';
+  if(newEl) newEl.value = '';
+  if(new2El) new2El.value = '';
+  if(msg){ msg.textContent = '—'; msg.style.color = ''; }
+  var m = document.getElementById('pinModal');
+  if(m) m.classList.add('open');
+  document.body.classList.add('fab-hidden');
+  setTimeout(function(){ try{ if(currentEl) currentEl.focus(); }catch(e){} }, 80);
+}
+function closePinModal(){
+  var m = document.getElementById('pinModal');
+  if(m) m.classList.remove('open');
+  document.body.classList.remove('fab-hidden');
 }
 async function finChangePin(){
   var currentEl = document.getElementById('pinCurrent');
@@ -1984,8 +1949,8 @@ async function finChangePin(){
     if(currentEl) currentEl.value = '';
     if(newEl) newEl.value = '';
     if(new2El) new2El.value = '';
-    allTrx = []; opnameData = []; anggaranT1 = []; anggaranT2 = []; tabungData = []; window.__lastFiltered = [];
-    setMsg('PIN berhasil diubah. Login ulang dengan PIN baru.', true);
+    allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; window.__lastFiltered = [];
+    closePinModal();
     finShowAuthGate('');
     finAuthMessage('PIN berhasil diubah. Login dengan PIN baru.', true);
   }catch(e){
@@ -2315,13 +2280,12 @@ function parseOpname(rows) {
 }
 
 function parseAnggaran(rows) {
-  anggaranT1 = []; anggaranT2 = [];
+  anggaranT1 = [];
   for (var i=1; i<rows.length; i++) {
-    var r=rows[i]; if(r.length<3) continue;
-    var kat=r[0], t1=num(r[1]), t2=num(r[2]);
+    var r=rows[i]; if(r.length<2) continue;
+    var kat=r[0], t1=num(r[1]);
     if(!kat || !String(kat).trim()) continue;
     anggaranT1.push({kat:kat, budget:t1, row:i+1});
-    anggaranT2.push({kat:kat, budget:t2, row:i+1});
   }
 }
 
@@ -2600,9 +2564,9 @@ function renderTrxKatList(q){
   box.innerHTML = html;
 }
 
-function getAnggaranLabels(){ return currentTier===1?anggaranT1.map(function(a){return a.kat}):anggaranT2.map(function(a){return a.kat}); }
-function getAnggaranBudget(){ return currentTier===1?anggaranT1.map(function(a){return a.budget}):anggaranT2.map(function(a){return a.budget}); }
-function getSavingPlan(){ return currentTier===1?savingT1:savingT2; }
+function getAnggaranLabels(){ return anggaranT1.map(function(a){return a.kat}); }
+function getAnggaranBudget(){ return anggaranT1.map(function(a){return a.budget}); }
+function getSavingPlan(){ return savingT1; }
 function isHutang(t){ return t.tipe==='Hutang' || t.kat==='Hutang' || t.akun==='Spaylater' || t.tujuan==='Spaylater' || t.tujuan==='Kartu Kredit'; }
 function isHutangPayment(t){ var s=(t.ket+' '+t.kat+' '+t.akun).toLowerCase(); return (s.indexOf('bayar')>=0 || s.indexOf('lunas')>=0 || s.indexOf('cicil')>=0) && (s.indexOf('hutang')>=0 || s.indexOf('spaylater')>=0 || s.indexOf('pinjaman')>=0); }
 function getHutangRows(rows){ return rows.filter(function(t){ return isHutang(t) || (t.tipe==='Pengeluaran' && isHutangPayment(t)); }); }
@@ -2699,13 +2663,8 @@ function initCharts() {
 function renderSavingPlan() {
   var plan = getSavingPlan();
   var total = plan.reduce(function(a,s){ return a + (Number(s.amount) || 0); }, 0);
-  var income = currentTier === 1 ? 3100000 : 2700000;
+  var income = 3100000;
   var pct = income > 0 ? Math.round(total / income * 100) : 0;
-  var tierName = currentTier === 1 ? 'Plan Utama' : 'Plan Ketat';
-  var tl = document.getElementById('savingTierLabel');
-  var tp = document.getElementById('targetPlanLabel');
-  if(tl) tl.textContent = tierName;
-  if(tp) tp.textContent = tierName;
   finSet('planSavingValue', rp(total));
   finSet('planSavingSub', 'Target ' + pct + '% per bulan');
   finSet('planBaselineValue', shortRp(income));
@@ -2714,12 +2673,6 @@ function renderSavingPlan() {
   var totalDebt = Object.keys(hBy).reduce(function(a,k){ return a + (Number(hBy[k]) || 0); }, 0);
   finSet('planDebtValue', shortRp(totalDebt));
   finSet('planDebtSub', totalDebt > 0 ? 'Sisa kewajiban aktif · data aktual' : 'Tidak ada kewajiban');
-  var tb = document.getElementById('tierBtn1');
-  if(tb){
-    var p1 = savingT1.reduce(function(a,x){ return a + (Number(x.amount)||0); }, 0);
-    var p1pct = Math.round(p1 / 3100000 * 100);
-    tb.textContent = 'Plan Utama · Saving ' + p1pct + '%';
-  }
   finSet('savingPlanNote', 'Total alokasi ' + rp(total) + ' · ' + pct + '% dari baseline ' + shortRp(income) + '.');
   var el = document.getElementById('savingPlanBody');
   if(!el) return;
@@ -2787,23 +2740,6 @@ function renderTabungan() {
       options:{ cutout:'68%', plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, padding:12, font:{size:10} } }, tooltip:{ callbacks:{ label:function(c){ return c.label + ': ' + rp(c.raw); } } } } }
     });
   }
-}
-
-function switchTier(t) {
-  currentTier = t;
-  var b1 = document.getElementById('tierBtn1'), b2 = document.getElementById('tierBtn2');
-  var name = t === 1 ? 'Plan Utama' : 'Plan Ketat';
-  if(b1 && b2){
-    b1.className = 'tier-btn ' + (t === 1 ? 'active-t1' : 'inactive');
-    b2.className = 'tier-btn ' + (t === 2 ? 'active-t2' : 'inactive');
-  }
-  ['tierLabel','tierLabelSet','savingTierLabel','targetPlanLabel'].forEach(function(id){
-    var el = document.getElementById(id);
-    if(el) el.textContent = name;
-  });
-  try { renderSavingPlan(); } catch(e){}
-  try { renderTabungan(); } catch(e){}
-  try { if(currentScreen === 'beranda' || currentScreen === 'target'){ applyFilter(); } } catch(e){}
 }
 
 function finSet(id, text){
@@ -2882,13 +2818,13 @@ function finBuildInsights(filtered, val, catExp, totPem, totPeng, totalBudget, t
     items.push({ type:'info', icon:'◎', title:'Pengeluaran terbesar: ' + top[0], text:rp(top[1]) + ' · ' + Math.round(top[1]/totPeng*100) + '% dari pengeluaran periode ini.' });
   }
   var rate = totPem > 0 ? Math.round((totPem - totPeng) / totPem * 100) : null;
-  var planIncome = currentTier === 1 ? 3100000 : 2700000;
+  var planIncome = 3100000;
   var planTotal = getSavingPlan().reduce(function(a,b){ return a + (Number(b.amount)||0); }, 0);
   var planPct = planIncome > 0 ? Math.round(planTotal / planIncome * 100) : 0;
   if(rate === null){
     items.push({ type:'warning', icon:'!', title:'Belum ada pemasukan', text:'Saving rate belum bisa dihitung pada periode ini.' });
   } else {
-    items.push({ type: rate >= planPct ? 'positive' : 'warning', icon: rate >= planPct ? '↗' : '!', title:'Saving rate ' + rate + '%', text:'Target plan ' + planPct + '% · ' + (rate >= planPct ? 'sudah di atas target.' : 'masih di bawah target.') });
+    items.push({ type: rate >= planPct ? 'positive' : 'warning', icon: rate >= planPct ? '↗' : '!', title:'Saving rate ' + rate + '%', text:'Target alokasi ' + planPct + '% · ' + (rate >= planPct ? 'sudah di atas target.' : 'masih di bawah target.') });
   }
   if(val && val !== 'all'){
     var prev = finPrevPeriod(val);
@@ -3054,7 +2990,7 @@ function applyFilter() {
       var stCls = 'positive', stText = 'Aman';
       if(used > budget){ stCls = 'negative'; stText = 'Melebihi'; }
       else if(budget > 0 && used > budget * 0.8){ stCls = 'warning'; stText = 'Hampir habis'; }
-      var src = (currentTier === 1 ? anggaranT1 : anggaranT2) || [];
+      var src = anggaranT1 || [];
       var row = (src[i] && src[i].row) ? src[i].row : 0;
       rows += '<tr><td>' + escAttr(k) + '</td><td class="num">' + rp(budget) + '</td><td class="num">' + rp(used) + '</td><td class="num ' + stCls + '">' + rp(sisa) + '</td><td><span class="pill ' + (stCls === 'positive' ? 'pemasukan' : stCls === 'negative' ? 'pengeluaran' : 'hutang') + '">' + stText + '</span></td>'
         + '<td style="white-space:nowrap"><button type="button" class="editBtn" title="Ubah anggaran" onclick="angEdit(' + row + ')">✎</button></td></tr>';
@@ -3066,7 +3002,7 @@ function applyFilter() {
   if(sts){
     if(!labels.length){
       sts.className = 'anggaran-status';
-      sts.innerHTML = 'Belum ada anggaran untuk tier ini. Tambahkan kategori untuk mulai memantau.';
+      sts.innerHTML = 'Belum ada anggaran. Tambahkan kategori untuk mulai memantau.';
     } else if(totalSisa >= 0){
       sts.className = 'anggaran-status ok';
       sts.innerHTML = '<strong>Sisa anggaran ' + rp(totalSisa) + '</strong> dari ' + rp(totalBudget) + ' · terpakai ' + totalPct + '% · ' + budgetPeriod + '.';
@@ -3996,12 +3932,14 @@ function openAdd(){
   finSetTipe('Pengeluaran', {resetKat:true});
   var m = finEl('addModal');
   if(m) m.classList.add('open');
+  document.body.classList.add('fab-hidden');
   setTimeout(function(){ finSegMove(); try { finEl('fNom').focus(); } catch(e){} }, 80);
 }
 function openAddTipe(t){ openAdd(); finSetTipe(t, {resetKat:true}); }
 function closeAdd(){
   var m = finEl('addModal');
   if(m) m.classList.remove('open');
+  document.body.classList.remove('fab-hidden');
   finCloseKat();
 }
 function finShowToast(){
@@ -4523,31 +4461,6 @@ function renderTrxAll(){
 }
 
 /* ===== PENGATURAN ===== */
-function setCopyEndpoint(){
-  var m = document.getElementById('setPingMsg');
-  var txt = FIN_ENDPOINT || '';
-  var done = function(ok){ if(m) m.textContent = ok ? 'Alamat disalin \u2705' : 'Gagal menyalin, salin manual ya.'; };
-  if(!txt){ if(m) m.textContent = 'Alamat simpan belum termuat.'; return; }
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(function(){done(true)}).catch(function(){done(false)});
-  } else { done(false); }
-}
-
-function setTestPing(){
-  var m = document.getElementById('setPingMsg');
-  if(!FIN_ENDPOINT){ if(m) m.textContent = 'Alamat simpan belum termuat. Buka ulang halaman.'; return; }
-  if(m) m.textContent = 'Menguji koneksi...';
-  var t0 = Date.now();
-  fetch(finUrl('ping'), {cache:'no-store'})
-    .then(function(r){ return r.text().then(function(x){ return {code:r.status, body:x}; }); })
-    .then(function(o){
-      if(m) m.textContent = (o.code === 200 ? 'Tersambung \u2705 ' : 'Gagal \u274c ') + o.code + ' \u00b7 ' + (Date.now()-t0) + ' ms';
-    })
-    .catch(function(e){
-      if(m) m.textContent = 'Gagal menyambung \u274c ' + (e && e.message ? e.message : 'jaringan');
-    });
-}
-
 function setTema(nama){
   try { localStorage.setItem('finTema', nama); } catch(e){}
   applyTema(nama);
@@ -4565,16 +4478,8 @@ function applyTema(nama){
 }
 
 function setRefreshInfo(){
-  var ep = document.getElementById('setEndpoint');
-  if(ep) ep.textContent = FIN_ENDPOINT || '(belum termuat)';
-  var info = document.getElementById('setInfo');
-  if(info){
-    var ang = (currentTier === 1 ? anggaranT1 : anggaranT2) || [];
-    info.innerHTML = 'Transaksi termuat: <strong>' + (allTrx ? allTrx.length : 0) + '</strong><br>'
-      + 'Kategori anggaran: <strong>' + ang.length + '</strong><br>'
-      + 'Target tabungan: <strong>' + (tabungData ? tabungData.length : 0) + '</strong><br>'
-      + 'Waktu: <strong>' + new Date().toLocaleString('id-ID') + '</strong>';
-  }
+  var version = document.getElementById('appVersion');
+  if(version) version.textContent = 'Versi ' + APP_VERSION;
 }
 
 var angEditRow = 0;
@@ -4588,16 +4493,14 @@ function angMsgBox(txt, ok){
 
 function angApplyItems(items){
   if(!items || !items.length) return;
-  anggaranT1 = []; anggaranT2 = [];
+  anggaranT1 = [];
   items.forEach(function(it){
     anggaranT1.push({kat: it.kat, budget: it.t1, row: it.row});
-    anggaranT2.push({kat: it.kat, budget: it.t2, row: it.row});
   });
 }
 
 function angFind(row){
-  var all = anggaranT1.concat(anggaranT2);
-  for(var i=0;i<all.length;i++){ if(all[i].row === row) return all[i]; }
+  for(var i=0;i<anggaranT1.length;i++){ if(anggaranT1[i].row === row) return anggaranT1[i]; }
   return null;
 }
 
@@ -4606,7 +4509,6 @@ function angAddNew(){
   var t = document.getElementById('angTitle'); if(t) t.textContent = 'Tambah anggaran';
   var k = document.getElementById('angKat'); if(k) k.value = '';
   var a = document.getElementById('angT1'); if(a) a.value = '';
-  var b = document.getElementById('angT2'); if(b) b.value = '';
   var p = document.getElementById('angPin'); if(p) p.value = '';
   var d = document.getElementById('angBtnDel'); if(d) d.style.display = 'none';
   angMsgBox('', true);
@@ -4621,10 +4523,6 @@ function angEdit(row){
   var t = document.getElementById('angTitle'); if(t) t.textContent = 'Ubah anggaran';
   var k = document.getElementById('angKat'); if(k) k.value = it.kat;
   var a = document.getElementById('angT1'); if(a) a.value = Math.round(it.budget);
-  var pair = angFind(row);
-  var t2 = 0;
-  for(var i=0;i<anggaranT2.length;i++){ if(anggaranT2[i].row === row){ t2 = anggaranT2[i].budget; break; } }
-  var b = document.getElementById('angT2'); if(b) b.value = Math.round(t2);
   var p = document.getElementById('angPin'); if(p) p.value = '';
   var d = document.getElementById('angBtnDel'); if(d) d.style.display = 'block';
   angMsgBox('', true);
@@ -4646,14 +4544,13 @@ function angSave(){
   var pin = angNeedPin(); if(!pin) return;
   var kat = String((document.getElementById('angKat')||{}).value || '').trim();
   var t1 = Number((document.getElementById('angT1')||{}).value || 0);
-  var t2 = Number((document.getElementById('angT2')||{}).value || 0);
   if(!kat){ angMsgBox('Kategori belum diisi.', false); return; }
-  if(!(t1 >= 0) || !(t2 >= 0)){ angMsgBox('Anggaran tidak boleh negatif.', false); return; }
+  if(!(t1 >= 0)){ angMsgBox('Anggaran tidak boleh negatif.', false); return; }
   if(!FIN_ENDPOINT){ angMsgBox('Alamat simpan belum siap. Tunggu sebentar.', false); finLoadEndpoint(); return; }
   var btn = document.getElementById('angBtnSave');
   if(btn) btn.disabled = true;
   angMsgBox('Menyimpan...', true);
-  finPost('/anggaran/save', {row: angEditRow || 0, kat: kat, t1: t1, t2: t2, pin: pin})
+  finPost('/anggaran/save', {row: angEditRow || 0, kat: kat, t1: t1, t2: t1, pin: pin})
     .then(function(j){
       if(btn) btn.disabled = false;
       if(j && j.ok){
@@ -4717,6 +4614,7 @@ document.addEventListener('DOMContentLoaded', function(){
   var t = 'lime';
   try { t = localStorage.getItem('finTema') || 'lime'; } catch(e){}
   applyTema(t);
+  setRefreshInfo();
   var h = (location.hash || '').replace('#/','');
   showScreen(h || 'beranda', true);
   setTimeout(setRefreshInfo, 1500);
