@@ -90,6 +90,12 @@ diisi dari data nyata yang sudah ada:
 Status migrasi disimpan di Script Property `MASTER_DATA_V1`. Jangan menghapus
 properti itu kecuali memang ingin melakukan seed ulang pada tab yang kosong.
 
+Jika tab master belum muncul setelah deploy, buka editor Apps Script dan
+jalankan fungsi publik **`siapkanDataMaster`**. Jangan memilih
+`ensureMasterData_`: nama berakhiran `_` dianggap private dan tidak muncul di
+dropdown Run Apps Script. Setelah deploy, `.../exec?action=ping` juga memuat
+`build` sebagai penanda versi backend yang aktif.
+
 Aksi baru yang memerlukan sesi + PIN:
 
 `akun/save`, `akun/delete` (arsip), `kategori/save`, `kategori/delete`

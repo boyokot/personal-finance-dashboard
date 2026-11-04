@@ -31,6 +31,7 @@ var TAB_AKUN = 'Akun';
 var TAB_KATEGORI = 'Kategori Master';
 var TAB_RENCANA = 'Rencana';
 var MASTER_DATA_KEY = 'MASTER_DATA_V1';
+var BUILD = 'p1-20261104';
 var TZ = 'Asia/Jakarta';
 var FOLDER_DEFAULT = 'Bukti Keuangan Pribadi';
 var HDR_H = 'Akun Tujuan / Pihak';
@@ -54,6 +55,7 @@ function doGet(e) {
         ok: true,
         service: 'keuangan-pribadi',
         mode: 'apps-script',
+        build: BUILD,
         configured: !!pinConfig_(),
         setup: !pinConfig_() && !!setupToken_(),
         time: nowStr()
@@ -393,6 +395,15 @@ function ensureMasterData_() {
     seedMasterData_(ss);
     props.setProperty(MASTER_DATA_KEY, '1');
   });
+}
+
+/**
+ * Pintu masuk publik untuk menjalankan migrasi dari dropdown Run di editor.
+ * Apps Script menyembunyikan fungsi berakhiran "_" dari dropdown, jadi
+ * jangan panggil ensureMasterData_ langsung dari editor.
+ */
+function siapkanDataMaster() {
+  ensureMasterData_();
 }
 
 function seedMasterData_(ss) {
