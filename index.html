@@ -496,6 +496,15 @@ td.num { font-weight: 800; }
 .summary-label strong.negative { color: var(--negative); }
 .home-summary-item .progress-track { height: 6px; margin-top: 7px; }
 .home-summary-item .stat-sub { margin-top: 5px; font-size: 8.7px; line-height: 1.35; }
+.home-liability { margin-top: 9px; padding: 13px; }
+.home-liability .home-summary-head { margin-bottom: 8px; }
+.home-liability .liability-list { gap: 6px; }
+.home-liability .liability-item { padding: 9px 10px; border-radius: 12px; }
+.home-liability .liability-icon { width: 28px; height: 28px; border-radius: 9px; font-size: 11px; }
+.home-liability .liability-copy strong { font-size: 11px; }
+.home-liability .liability-copy span { font-size: 9px; }
+.home-liability .liability-amount { font-size: 11.5px; }
+.home-liability .stat-sub { margin-top: 8px; font-size: 9px; line-height: 1.4; }
 .home-insight-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 2px 5px; color: var(--muted-2); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .home-insight-label .link-btn { padding: 0; font-size: 10px; letter-spacing: 0; text-transform: none; }
 .home-insight .insight-item { padding: 10px 12px; border-radius: 14px; }
@@ -893,6 +902,23 @@ td.num { font-weight: 800; }
   height: 3px;
   border-radius: 99px;
   background: var(--primary);
+}
+.bottomnav button .nav-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 3px);
+  display: grid;
+  place-items: center;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 4px;
+  border: 2px solid var(--surface);
+  border-radius: 99px;
+  background: var(--warning);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
 }
 .bottomnav button:active { transform: scale(.95); }
 
@@ -1479,6 +1505,15 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         </div>
       </div>
 
+      <div class="card home-liability" id="homeLiabilityCard" hidden>
+        <div class="home-summary-head">
+          <div><div class="eyebrow">Kewajiban</div><strong>Kewajiban aktif</strong></div>
+          <button type="button" class="link-btn" onclick="showScreen('akun')">Lihat detail <span>→</span></button>
+        </div>
+        <div class="liability-list" id="homeLiabilityList" aria-label="Daftar kewajiban"></div>
+        <div class="stat-sub" id="homeLiabilitySub">—</div>
+      </div>
+
       <div class="home-insight-label">Insight otomatis <button type="button" class="link-btn" onclick="showScreen('laporan')">Laporan →</button></div>
       <div class="home-insight insight-list" id="homeInsight" aria-label="Insight otomatis"></div>
 
@@ -1751,7 +1786,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle><circle cx="12" cy="12" r="1"></circle></svg><span>Target</span>
   </button>
   <button type="button" data-nav="akun" aria-label="Akun" title="Akun">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5v-11Z"></path><path d="M4 8h16M16 13h2"></path></svg><span>Akun</span>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v16H6.5A2.5 2.5 0 0 1 4 17.5v-11Z"></path><path d="M4 8h16M16 13h2"></path></svg><span>Akun</span><span class="nav-badge" id="navKewajibanBadge" aria-hidden="true" hidden></span>
   </button>
   <button type="button" data-nav="pengaturan" aria-label="Pengaturan" title="Pengaturan">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg><span>Pengaturan</span>
@@ -1912,7 +1947,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.1.1';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
@@ -2812,6 +2847,36 @@ function hutangAkun(t){
   if(s.indexOf('kartu kredit')>=0 || s.indexOf('jenius')>=0) return 'Kartu Kredit';
   return t.akun || 'Hutang';
 }
+function finCurrentMonthKey(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function finLiabilityMeta(name, value){
+  var lastPay = null, lastDebt = null;
+  allTrx.forEach(function(t){
+    if(hutangAkun(t) !== name) return;
+    var signed = hutangSigned(t);
+    if(!signed) return;
+    if(signed < 0){
+      if(!lastPay || (t.date && t.date > lastPay.date)) lastPay = t;
+    } else {
+      if(!lastDebt || (t.date && t.date > lastDebt.date)) lastDebt = t;
+    }
+  });
+  var month = finCurrentMonthKey();
+  var paidThisMonth = !!(lastPay && lastPay.date && lastPay.date.slice(0,7) === month && (!lastDebt || lastPay.date >= lastDebt.date));
+  var status = value <= 0 ? 'Lunas' : (lastDebt && (!lastPay || lastDebt.date > lastPay.date)) ? 'Belum dibayar' : 'Sisa';
+  var detail = status + ' · ' + (lastPay && lastPay.tgl ? 'terakhir bayar ' + lastPay.tgl : 'belum ada pembayaran');
+  return { name:name, value:value, lastPayment:lastPay, lastDebt:lastDebt, paidThisMonth:paidThisMonth, status:status, detail:detail };
+}
+function finLiabilityItems(hutangByAkun){
+  var items = [];
+  Object.keys(hutangByAkun || {}).forEach(function(k){
+    var v = Number(hutangByAkun[k]) || 0;
+    if(v > 0) items.push(finLiabilityMeta(k, v));
+  });
+  return items.sort(function(a,b){ return (b.value - a.value) || String(a.name).localeCompare(String(b.name)); });
+}
 
 function initCharts() {
   if(typeof Chart === 'undefined') return;
@@ -2902,8 +2967,9 @@ function renderSavingPlan() {
   var hAll = getHutangRows(allTrx), hBy = {};
   hAll.forEach(function(t){ var k = hutangAkun(t); hBy[k] = (hBy[k] || 0) + hutangSigned(t); });
   var totalDebt = Object.keys(hBy).reduce(function(a,k){ return a + (Number(hBy[k]) || 0); }, 0);
+  var debtItems = finLiabilityItems(hBy);
   finSet('planDebtValue', shortRp(totalDebt));
-  finSet('planDebtSub', totalDebt > 0 ? 'Sisa kewajiban aktif · data aktual' : 'Tidak ada kewajiban');
+  finSet('planDebtSub', totalDebt > 0 ? debtItems.length + ' kewajiban aktif · data aktual' : 'Tidak ada kewajiban');
   finSet('savingPlanNote', 'Total alokasi ' + rp(total) + ' · ' + pct + '% dari baseline ' + shortRp(income) + '.');
   var el = document.getElementById('savingPlanBody');
   if(!el) return;
@@ -3024,14 +3090,13 @@ function finHomeAccounts(accounts, piutangVal){
 function finRenderLiabilities(hutangByAkun, piutangVal){
   var box = document.getElementById('akunKewajibanList');
   if(!box) return;
+  var items = finLiabilityItems(hutangByAkun);
   var html = '';
-  Object.keys(hutangByAkun || {}).sort().forEach(function(k){
-    var v = Number(hutangByAkun[k]) || 0;
-    if(v <= 0) return;
-    html += '<button type="button" class="liability-item" data-akun="' + escAttr(k) + '">'
+  items.forEach(function(item){
+    html += '<button type="button" class="liability-item" data-akun="' + escAttr(item.name) + '">'
       + '<span class="liability-icon">!</span>'
-      + '<span class="liability-copy"><strong>' + escAttr(k) + '</strong><span>Sisa kewajiban · status aktif</span></span>'
-      + '<span class="liability-amount">' + rp(v) + '</span></button>';
+      + '<span class="liability-copy"><strong>' + escAttr(item.name) + '</strong><span>' + escAttr(item.detail) + '</span></span>'
+      + '<span class="liability-amount">' + rp(item.value) + '</span></button>';
   });
   if(piutangVal > 0){
     html += '<button type="button" class="liability-item" data-akun="Piutang">'
@@ -3040,6 +3105,46 @@ function finRenderLiabilities(hutangByAkun, piutangVal){
       + '<span class="liability-amount" style="color:var(--info)">' + rp(piutangVal) + '</span></button>';
   }
   box.innerHTML = html || '<div class="empty-state">Tidak ada hutang atau piutang tercatat. 🎉</div>';
+  finRenderHomeLiabilities(hutangByAkun);
+}
+
+function finRenderHomeLiabilities(hutangByAkun){
+  var card = document.getElementById('homeLiabilityCard');
+  var box = document.getElementById('homeLiabilityList');
+  var sub = document.getElementById('homeLiabilitySub');
+  var badge = document.getElementById('navKewajibanBadge');
+  if(!card || !box) return;
+  var items = finLiabilityItems(hutangByAkun);
+  if(!items.length){
+    card.hidden = true;
+    box.innerHTML = '';
+    if(badge) badge.hidden = true;
+    if(sub) sub.textContent = 'Tidak ada kewajiban aktif.';
+    return;
+  }
+  var total = items.reduce(function(a,item){ return a + item.value; }, 0);
+  var unpaid = items.filter(function(item){ return !item.paidThisMonth; }).length;
+  var visible = items.slice(0, 4);
+  var html = visible.map(function(item){
+    return '<button type="button" class="liability-item" data-akun="' + escAttr(item.name) + '">'
+      + '<span class="liability-icon">!</span>'
+      + '<span class="liability-copy"><strong>' + escAttr(item.name) + '</strong><span>' + escAttr(item.detail) + '</span></span>'
+      + '<span class="liability-amount">' + rp(item.value) + '</span></button>';
+  }).join('');
+  if(items.length > visible.length){
+    html += '<div class="stat-sub" style="padding:3px 2px 0">+' + (items.length - visible.length) + ' kewajiban lain · buka detail</div>';
+  }
+  card.hidden = false;
+  box.innerHTML = html;
+  if(sub){
+    sub.textContent = items.length + ' aktif · total ' + shortRp(total)
+      + (unpaid ? ' · ' + unpaid + ' belum ada pembayaran bulan ini' : ' · semua sudah ada pembayaran bulan ini');
+  }
+  if(badge){
+    badge.hidden = unpaid <= 0;
+    badge.textContent = unpaid > 9 ? '9+' : String(unpaid);
+    badge.title = unpaid + ' kewajiban belum ada pembayaran bulan ini';
+  }
 }
 
 function finBuildInsights(filtered, val, catExp, totPem, totPeng, totalBudget, totalUsed, budgetPeriod){
@@ -3273,11 +3378,6 @@ function applyFilter() {
   var hutangAll = getHutangRows(allTrx);
   var hutangByAkun = {};
   hutangAll.forEach(function(t){ var k = hutangAkun(t); hutangByAkun[k] = (hutangByAkun[k] || 0) + hutangSigned(t); });
-  Object.keys(hutangByAkun).sort().forEach(function(k){
-    var v = Number(hutangByAkun[k]) || 0;
-    if(!v) return;
-    accountRows += '<tr class="akun-row" data-akun="' + escAttr(k) + '"><td>' + escAttr(k) + '<span class="akun-go">›</span></td><td class="num negative">−' + rp(v) + '</td><td class="num"></td></tr>';
-  });
   var totalHutang = Object.keys(hutangByAkun).reduce(function(a,k){ return a + (Number(hutangByAkun[k]) || 0); }, 0);
   var totalAll = totalKas + piutangVal;
   var netWorth = totalAll - totalHutang;
@@ -5408,6 +5508,7 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.1.1</strong><br>Indikator kewajiban aktif di Beranda, penanda jumlah kewajiban di menu Akun, dan status pembayaran terakhir per kewajiban.</p>'
     + '<p><strong>Changelog v1.1.0</strong><br>Pengaturan dirapikan, mode privasi dan format angka, ekspor CSV/JSON, serta pengelolaan akun, kategori, target, dan rencana saving.</p>'
     + '<p><strong>PIN</strong><br>PIN tidak pernah ditampilkan di halaman ini. Gunakan tombol Ubah PIN di Pengaturan. Jika lupa, reset lewat editor Apps Script.</p>'
     + '<p><strong>Data</strong><br>Semua data berasal dari Google Sheets pribadi. Ekspor tidak memuat PIN atau token sesi.</p>'
@@ -5433,6 +5534,13 @@ document.addEventListener('DOMContentLoaded', function(){
   var liab = document.getElementById('akunKewajibanList');
   if(liab){
     liab.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-akun]') : null;
+      if(b) openAkunDetail(b.getAttribute('data-akun'));
+    });
+  }
+  var homeLiab = document.getElementById('homeLiabilityList');
+  if(homeLiab){
+    homeLiab.addEventListener('click', function(ev){
       var b = ev.target.closest ? ev.target.closest('[data-akun]') : null;
       if(b) openAkunDetail(b.getAttribute('data-akun'));
     });
