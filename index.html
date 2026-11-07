@@ -1886,7 +1886,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
     </div>
     <div class="ak-sum" id="akSum"></div>
     <div class="ak-list" id="akList"></div>
-    <div class="ak-foot"><button onclick="closeAkunDetail()" type="button">Tutup</button></div>
+    <div class="ak-foot" id="akFoot"><button onclick="closeAkunDetail()" type="button">Tutup</button></div>
   </div>
 </div>
 
@@ -1947,7 +1947,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.1';
+const APP_VERSION = 'v1.1.2';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
@@ -2688,6 +2688,7 @@ function openAkunDetail(name){
 
   document.getElementById('akTitle').textContent = 'Akun: ' + name;
   renderAkunDetail();
+  finRenderAkunFoot(name);
   m.classList.add('open');
 }
 
@@ -2756,6 +2757,33 @@ function renderAkunDetail(){
 function closeAkunDetail(){
   var m = document.getElementById('akunModal');
   if(m) m.classList.remove('open');
+}
+
+function finRenderAkunFoot(name){
+  var foot = document.getElementById('akFoot');
+  if(!foot) return;
+  var saldo = finLiabilityBalance(name);
+  if(finIsLiabilityAccount(name) && saldo > 0){
+    foot.innerHTML = '<button type="button" data-bayar-kewajiban="' + escAttr(name) + '" data-nominal="' + saldo + '">Catat pelunasan non-kas</button>';
+  } else {
+    foot.innerHTML = '<button type="button" onclick="closeAkunDetail()">Tutup</button>';
+  }
+}
+
+function finBayarKewajiban(name, amount){
+  if(!name) return;
+  closeAkunDetail();
+  openAdd();
+  setTimeout(function(){
+    finSetKat('Hutang', true);
+    finKatManual = true;
+    finKatPredicted = '';
+    if(finEl('fKet')) finEl('fKet').value = 'Pelunasan ' + name + ' dari pendapatan usaha';
+    finNomSet(Number(amount) || 0);
+    if(finEl('fAkun')) finEl('fAkun').value = name;
+    finMarkChips('chipAkun', 'akun', 'data-akun');
+    finMsg('Pelunasan non-kas: saldo BSI/DANA/Tunai tidak berubah. Sesuaikan tanggal, lalu masukkan PIN.', true);
+  }, 120);
 }
 
 function renderTrxKatList(q){
@@ -2846,6 +2874,21 @@ function hutangAkun(t){
   if(s.indexOf('spaylater')>=0) return 'Spaylater';
   if(s.indexOf('kartu kredit')>=0 || s.indexOf('jenius')>=0) return 'Kartu Kredit';
   return t.akun || 'Hutang';
+}
+function finIsLiabilityAccount(name){
+  if(name === 'Spaylater' || name === 'Kartu Kredit') return true;
+  var rows = akunData || [];
+  for(var i=0;i<rows.length;i++){
+    if(rows[i].nama === name) return rows[i].tipe === 'Kewajiban';
+  }
+  return false;
+}
+function finLiabilityBalance(name){
+  var total = 0;
+  getHutangRows(allTrx || []).forEach(function(t){
+    if(hutangAkun(t) === name) total += hutangSigned(t);
+  });
+  return Math.round(total);
 }
 function finCurrentMonthKey(){
   var d = new Date();
@@ -4572,6 +4615,14 @@ document.addEventListener('DOMContentLoaded', function(){
   if(akunMod){
     akunMod.addEventListener('click', function(ev){ if(ev.target === akunMod) closeAkunDetail(); });
   }
+  var akunFoot = document.getElementById('akFoot');
+  if(akunFoot){
+    akunFoot.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-bayar-kewajiban]') : null;
+      if(!b) return;
+      finBayarKewajiban(b.getAttribute('data-bayar-kewajiban'), Number(b.getAttribute('data-nominal')) || 0);
+    });
+  }
   document.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') closeAkunDetail(); });
 
   var trxWrap = document.getElementById('trxKatWrap');
@@ -5508,6 +5559,7 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.1.2</strong><br>Tombol catat pelunasan non-kas dari pendapatan usaha pada rincian kewajiban, tanpa mengurangi saldo BSI/DANA/Tunai.</p>'
     + '<p><strong>Changelog v1.1.1</strong><br>Indikator kewajiban aktif di Beranda, penanda jumlah kewajiban di menu Akun, dan status pembayaran terakhir per kewajiban.</p>'
     + '<p><strong>Changelog v1.1.0</strong><br>Pengaturan dirapikan, mode privasi dan format angka, ekspor CSV/JSON, serta pengelolaan akun, kategori, target, dan rencana saving.</p>'
     + '<p><strong>PIN</strong><br>PIN tidak pernah ditampilkan di halaman ini. Gunakan tombol Ubah PIN di Pengaturan. Jika lupa, reset lewat editor Apps Script.</p>'
