@@ -685,12 +685,43 @@ td.num { font-weight: 800; }
 /* ---------- reports ---------- */
 .report-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
 .report-summary .stat-card > strong { font-size: 17px; }
+.report-card { position: relative; cursor: pointer; }
+.report-card:focus-visible { outline: 3px solid rgba(14,122,79,.22); outline-offset: 2px; }
+.report-card .stat-label { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.report-card .report-chev { color: var(--primary); font-size: 15px; line-height: 1; }
+.report-breakdown { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
+.report-breakdown .stat-card { padding: 11px 12px; border-radius: 15px; }
+.report-breakdown .stat-card > strong { font-size: 14.5px; margin-top: 4px; }
+.report-breakdown .stat-card .stat-sub { font-size: 9px; }
+.report-breakdown .stat-card.total { background: var(--primary-pale); border-color: #cfe9da; }
 .chart-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
 .chart-card { padding: 15px 14px 10px; }
 .chart-card h3 { margin-bottom: 7px; }
+.chart-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.chart-card-head h3 { margin-bottom: 0; }
+.chart-card-head .link-btn { font-size: 10px; }
+.chart-card .chart-note { margin: 4px 0 7px; color: var(--muted-2); font-size: 9px; line-height: 1.4; }
 .chart-box { position: relative; width: 100%; height: 245px; }
 .chart-box canvas { width: 100% !important; height: 100% !important; max-height: none; }
 .report-note { margin-top: 9px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.detail-head { align-items: center; }
+.detail-head > div { flex: 1; min-width: 0; }
+.detail-back { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; }
+.detail-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.detail-summary .stat-card { padding: 12px; }
+.detail-summary .stat-card > strong { font-size: 15px; }
+.detail-note { margin: 9px 0 0; padding: 10px 12px; border: 1px solid #dbe9df; border-radius: 13px; background: #f6fbf7; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.detail-section { margin-top: 10px; }
+.detail-section > h3 { margin: 0 0 7px; }
+.report-cat-row { cursor: pointer; }
+.report-cat-row:hover td { background: #f7fbf8; }
+.report-cat-name { font-weight: 800; }
+.report-cat-sub { display: block; margin-top: 2px; color: var(--muted-2); font-size: 9.5px; }
+.report-pill { display: inline-flex; padding: 3px 7px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 9px; font-weight: 800; white-space: nowrap; }
+.report-pill.debt { background: var(--negative-soft); color: var(--negative); }
+.report-pill.consumption { background: var(--primary-soft); color: var(--primary); }
+.report-pill.income { background: var(--info-soft); color: var(--info); }
+.detail-empty { padding: 18px; color: var(--muted); font-size: 11px; text-align: center; }
 
 /* ---------- target ---------- */
 .target-tabs {
@@ -947,7 +978,7 @@ td.num { font-weight: 800; }
   transition: transform .15s ease;
 }
 .fab:active { transform: scale(.94); }
-body.fin-auth-locked .fab, body.fab-hidden .fab { display: none; }
+body.fin-auth-locked .fab, body.fab-hidden .fab, body[data-screen="rincian"] .fab { display: none; }
 @media (max-width: 360px) {
   .refresh-badge { display: none; }
 }
@@ -1333,6 +1364,8 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   .stat-card { padding: 15px 16px; }
   .stat-card > strong { font-size: 21px; }
   .report-summary { grid-template-columns: repeat(4, 1fr); }
+  .report-breakdown { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detail-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .chart-grid { grid-template-columns: 1fr 1fr; }
   .target-overview { grid-template-columns: repeat(3, 1fr); }
   .plan-grid { grid-template-columns: repeat(4, 1fr); }
@@ -1566,22 +1599,66 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         <span class="muted" id="reportPeriodLabel" style="font-size:10.5px;font-weight:700"></span>
       </div>
       <div class="report-summary">
-        <div class="stat-card"><span class="stat-label">Pemasukan</span><strong class="positive" id="reportPemasukan">—</strong><span class="stat-sub">Periode terpilih</span></div>
-        <div class="stat-card"><span class="stat-label">Pengeluaran</span><strong class="negative" id="reportPengeluaran">—</strong><span class="stat-sub">Periode terpilih</span></div>
-        <div class="stat-card"><span class="stat-label">Netto</span><strong id="reportNetto">—</strong><span class="stat-sub">Arus kas bersih</span></div>
-        <div class="stat-card"><span class="stat-label">Saving rate</span><strong id="reportSavingRate">—</strong><span class="stat-sub">Dari pemasukan</span></div>
+        <div class="stat-card report-card" data-report="pemasukan" role="button" tabindex="0" aria-label="Buka rincian pemasukan">
+          <span class="stat-label">Pemasukan <span class="report-chev" aria-hidden="true">›</span></span>
+          <strong class="positive" id="reportPemasukan">—</strong>
+          <span class="stat-sub" id="reportPemasukanSub">Periode terpilih</span>
+        </div>
+        <div class="stat-card report-card" data-report="pengeluaran" role="button" tabindex="0" aria-label="Buka rincian pengeluaran">
+          <span class="stat-label">Pengeluaran <span class="report-chev" aria-hidden="true">›</span></span>
+          <strong class="negative" id="reportPengeluaran">—</strong>
+          <span class="stat-sub" id="reportPengeluaranSub">Periode terpilih</span>
+        </div>
+        <div class="stat-card report-card" data-report="arus" role="button" tabindex="0" aria-label="Buka rincian arus kas">
+          <span class="stat-label">Netto <span class="report-chev" aria-hidden="true">›</span></span>
+          <strong id="reportNetto">—</strong>
+          <span class="stat-sub" id="reportNettoSub">Arus kas bersih</span>
+        </div>
+        <div class="stat-card report-card" data-report="arus" role="button" tabindex="0" aria-label="Buka rincian saving rate">
+          <span class="stat-label">Saving rate <span class="report-chev" aria-hidden="true">›</span></span>
+          <strong id="reportSavingRate">—</strong>
+          <span class="stat-sub" id="reportSavingRateSub">Dari pemasukan</span>
+        </div>
+      </div>
+      <div class="report-breakdown" aria-label="Rincian pengeluaran">
+        <div class="stat-card"><span class="stat-label">Konsumsi</span><strong id="reportKonsumsi">—</strong><span class="stat-sub">Tanpa pembayaran kewajiban</span></div>
+        <div class="stat-card"><span class="stat-label">Pembayaran kewajiban</span><strong id="reportKewajiban">—</strong><span class="stat-sub">Kartu kredit, Spaylater, pinjaman</span></div>
+        <div class="stat-card total"><span class="stat-label">Total kas keluar</span><strong id="reportTotalKeluar">—</strong><span class="stat-sub">Konsumsi + kewajiban</span></div>
       </div>
       <div class="insight-list" id="reportInsight" style="margin-top:10px"></div>
       <div class="chart-grid">
-        <div class="card chart-card"><h3>Arus kas bulanan</h3><div class="chart-box"><canvas id="monthly"></canvas></div></div>
-        <div class="card chart-card"><h3>Saldo per akun</h3><div class="chart-box"><canvas id="accounts"></canvas></div></div>
-        <div class="card chart-card"><h3>Pengeluaran per kategori</h3><div class="chart-box"><canvas id="expenseCat"></canvas></div></div>
-        <div class="card chart-card"><h3>Netto per bulan</h3><div class="chart-box"><canvas id="netto"></canvas></div></div>
+        <div class="card chart-card">
+          <div class="chart-card-head"><h3>Arus kas bulanan</h3><button type="button" class="link-btn" onclick="openReportDetail('arus')">Rincian →</button></div>
+          <div class="chart-box"><canvas id="monthly"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-card-head"><h3>Saldo per akun</h3><button type="button" class="link-btn" onclick="showScreen('akun')">Rincian →</button></div>
+          <div class="chart-box"><canvas id="accounts"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-card-head"><h3>Pengeluaran per kategori</h3><button type="button" class="link-btn" onclick="openReportDetail('pengeluaran')">Rincian →</button></div>
+          <div class="chart-note">Termasuk pembayaran kewajiban. Klik kategori untuk melihat transaksinya.</div>
+          <div class="chart-box"><canvas id="expenseCat"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-card-head"><h3>Netto per bulan</h3><button type="button" class="link-btn" onclick="openReportDetail('arus')">Rincian →</button></div>
+          <div class="chart-box"><canvas id="netto"></canvas></div>
+        </div>
       </div>
       <div class="card" style="margin-top:10px">
         <h3>Catatan laporan</h3>
-        <div class="report-note">Transfer antar-akun tidak dihitung sebagai pemasukan atau pengeluaran. Hutang dan piutang diperlakukan sebagai pos neraca, bukan pengeluaran kas sampai pembayaran dilakukan. Angka laporan mengikuti bulan yang dipilih di bagian atas.</div>
+        <div class="report-note">Transfer antar-akun, opname, dan koreksi saldo tidak dihitung sebagai pemasukan atau pengeluaran. <strong>Pengeluaran</strong> adalah total kas keluar: konsumsi + pembayaran kewajiban. <strong>Anggaran</strong> hanya memakai konsumsi, sehingga tidak tercampur dengan pembayaran kartu kredit/Spaylater. Angka laporan mengikuti bulan yang dipilih di bagian atas.</div>
       </div>
+    </section>
+
+    <!-- ================= RINCIAN LAPORAN ================= -->
+    <section class="screen" data-screen="rincian" id="screen-rincian" hidden>
+      <div class="screen-head detail-head">
+        <button type="button" class="detail-back" onclick="showScreen('laporan')" aria-label="Kembali ke laporan">←</button>
+        <div><div class="eyebrow" id="rdEyebrow">Rincian laporan</div><h2 id="rdTitle">Rincian</h2></div>
+        <span class="muted" id="rdPeriod" style="font-size:10.5px;font-weight:700"></span>
+      </div>
+      <div id="rdContent"></div>
     </section>
 
     <!-- ================= TARGET ================= -->
@@ -1629,7 +1706,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       <div class="target-panel" id="target-anggaran" hidden>
         <div class="card">
           <div class="card-head"><div><h3>Kelola anggaran</h3><div class="sub" style="margin-top:3px">Atur batas pengeluaran per kategori.</div></div><button type="button" class="primary-btn" onclick="angAddNew()" aria-label="Tambah anggaran kategori">+ Anggaran</button></div>
-          <div class="stat-sub">Batas pengeluaran bulanan per kategori.</div>
+          <div class="stat-sub">Batas pengeluaran bulanan per kategori, di luar pembayaran kewajiban.</div>
         </div>
         <div class="section-head"><div><div class="eyebrow">Realisasi</div><h2>Anggaran bulanan</h2></div></div>
         <div class="card table-card">
@@ -1947,7 +2024,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.2';
+const APP_VERSION = 'v1.1.3';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
@@ -2890,6 +2967,105 @@ function finLiabilityBalance(name){
   });
   return Math.round(total);
 }
+function finIsAdjustment(t){
+  var s = String((t && t.ket) || '') + ' ' + String((t && t.kat) || '');
+  return /(^|\b)(opname|koreksi|adjust(?:ment)?|saldo awal|balance adjust)(\b|$)/i.test(s);
+}
+function finIsDebtPayment(t){
+  if(!t || t.tipe !== 'Pengeluaran') return false;
+  if(isHutangPayment(t)) return true;
+  var kat = String(t.kat || '').trim().toLowerCase();
+  return kat === 'hutang' || kat === 'pembayaran pinjaman' || kat === 'bayar pinjaman';
+}
+function finExpenseBucket(t){
+  if(!t || t.tipe !== 'Pengeluaran') return '';
+  if(finIsAdjustment(t)) return 'adjustment';
+  if(finIsDebtPayment(t)) return 'debt';
+  if(/^transfer$/i.test(String(t.kat || '').trim())) return 'transfer';
+  return 'consumption';
+}
+function finExpenseLabel(t){
+  var b = finExpenseBucket(t);
+  if(b === 'debt') return 'Pembayaran kewajiban';
+  if(b === 'adjustment') return 'Penyesuaian';
+  if(b === 'transfer') return 'Transfer (tidak dihitung)';
+  return String(t.kat || '').trim() || 'Tanpa kategori';
+}
+function finReportModel(rows){
+  var m = {
+    income:0, consumption:0, debt:0, adjustment:0, adjustmentIncome:0, adjustmentExpense:0, outflow:0, net:0, savingRate:null,
+    incomeByCat:{}, expenseByCat:{}, debtByCreditor:{},
+    incomeCount:0, expenseCount:0, debtCount:0, adjustmentCount:0, adjustmentIncomeCount:0, adjustmentExpenseCount:0,
+    transfer:0, piutang:0, newDebt:0
+  };
+  (rows || []).forEach(function(t){
+    var nom = Number(t.nom) || 0;
+    if(t.tipe === 'Pemasukan'){
+      if(finIsAdjustment(t)){
+        m.adjustment += nom; m.adjustmentCount++; m.adjustmentIncome += nom; m.adjustmentIncomeCount++; return;
+      }
+      m.income += nom; m.incomeCount++;
+      var ik = String(t.kat || '').trim() || 'Tanpa kategori';
+      m.incomeByCat[ik] = (m.incomeByCat[ik] || 0) + nom;
+    } else if(t.tipe === 'Pengeluaran'){
+      var b = finExpenseBucket(t);
+      if(b === 'adjustment'){
+        m.adjustment += nom; m.adjustmentCount++; m.adjustmentExpense += nom; m.adjustmentExpenseCount++; return;
+      }
+      if(b === 'transfer'){
+        m.transfer += nom; return;
+      }
+      m.expenseCount++;
+      m.outflow += nom;
+      if(b === 'debt'){
+        m.debt += nom; m.debtCount++;
+        var dk = hutangAkun(t) || 'Kewajiban';
+        m.debtByCreditor[dk] = (m.debtByCreditor[dk] || 0) + nom;
+      } else {
+        m.consumption += nom;
+        var ek = String(t.kat || '').trim() || 'Tanpa kategori';
+        m.expenseByCat[ek] = (m.expenseByCat[ek] || 0) + nom;
+      }
+    } else if(t.tipe === 'Transfer'){
+      m.transfer += nom;
+    } else if(t.tipe === 'Piutang'){
+      m.piutang += nom;
+    } else if(t.tipe === 'Hutang'){
+      m.newDebt += nom;
+    }
+  });
+  m.net = m.income - m.outflow;
+  m.savingRate = m.income > 0 ? Math.round(m.net / m.income * 100) : null;
+  return m;
+}
+function finOutflowCategoryMap(model){
+  var map = {};
+  Object.keys((model && model.expenseByCat) || {}).forEach(function(k){
+    map[k] = model.expenseByCat[k];
+  });
+  if(model && model.debt > 0) map['Pembayaran kewajiban'] = model.debt;
+  return map;
+}
+function finChartCategoryEntries(map, limit){
+  var entries = Object.keys(map || {}).map(function(k){ return [k, Number(map[k]) || 0]; })
+    .filter(function(e){ return e[1] > 0; })
+    .sort(function(a,b){ return b[1] - a[1] || a[0].localeCompare(b[0], 'id'); });
+  if(limit && entries.length > limit){
+    var rest = entries.slice(limit);
+    var other = rest.reduce(function(a,e){ return a + e[1]; }, 0);
+    entries = entries.slice(0, limit);
+    if(other > 0) entries.push(['Lainnya (' + rest.length + ' kategori)', other]);
+  }
+  return entries;
+}
+function finDetailRows(){
+  var sel = document.getElementById('filterBulan');
+  var val = sel ? (sel.value || 'all') : 'all';
+  if(val === 'all') return (allTrx || []).slice();
+  var parts = val.split('-');
+  var th = parseInt(parts[0],10), bl = parseInt(parts[1],10);
+  return (allTrx || []).filter(function(t){ return t.th === th && t.bl === bl; });
+}
 function finCurrentMonthKey(){
   var d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
@@ -2955,7 +3131,7 @@ function initCharts() {
         { label:'Pemasukan', data:mPem, backgroundColor:'rgba(14,122,79,.82)', borderRadius:5, maxBarThickness:18 },
         { label:'Pengeluaran', data:mPeng, backgroundColor:'rgba(210,75,75,.72)', borderRadius:5, maxBarThickness:18 }
       ]},
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:legend, tooltip:{ callbacks:{ label:function(c){ return c.dataset.label + ': ' + rp(c.raw); } } } }, scales:{ x:{ grid:{ display:false }, border:{ display:false } }, y:{ beginAtZero:true, grid:{ color:'#eef3ed' }, border:{ display:false }, ticks:{ callback:moneyTick } } } }
+      options:{ responsive:true, maintainAspectRatio:false, onClick:function(evt, elements){ if(elements && elements.length) openReportDetail('arus'); }, plugins:{ legend:legend, tooltip:{ callbacks:{ label:function(c){ return c.dataset.label + ': ' + rp(c.raw); } } } }, scales:{ x:{ grid:{ display:false }, border:{ display:false } }, y:{ beginAtZero:true, grid:{ color:'#eef3ed' }, border:{ display:false }, ticks:{ callback:moneyTick } } } }
     });
   }
 
@@ -2973,7 +3149,7 @@ function initCharts() {
     charts.expenseCat = new Chart(elExpense, {
       type:'doughnut',
       data:{ labels:[], datasets:[{ data:[], backgroundColor:['#0e7a4f','#4f8fda','#d8b24a','#6d5bb3','#d24b4b','#55a58a','#c4783e','#8b6bb5','#7a9c67','#bfc9c1'], borderColor:'#ffffff', borderWidth:3, hoverOffset:4 }] },
-      options:{ cutout:'66%', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, padding:10, font:{size:10}, usePointStyle:true, pointStyle:'circle' } }, tooltip:{ callbacks:{ label:function(c){ return c.label + ': ' + rp(c.raw); } } } } }
+      options:{ cutout:'66%', responsive:true, maintainAspectRatio:false, onClick:function(evt, elements){ if(!elements || !elements.length) return; var label=String(this.data.labels[elements[0].index] || ''); if(label.indexOf('Lainnya') === 0) openReportDetail('pengeluaran'); else openReportDetail('kategori', label, 'pengeluaran', label === 'Pembayaran kewajiban' ? 'debt' : 'consumption'); }, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, padding:10, font:{size:10}, usePointStyle:true, pointStyle:'circle' } }, tooltip:{ callbacks:{ label:function(c){ return c.label + ': ' + rp(c.raw); } } } } }
     });
   }
 
@@ -2982,7 +3158,7 @@ function initCharts() {
     charts.netto = new Chart(elNetto, {
       type:'line',
       data:{ labels:mLabels, datasets:[{ label:'Netto', data:mNetto, borderColor:'#0e7a4f', backgroundColor:'rgba(14,122,79,.1)', fill:true, tension:.35, pointRadius:2, pointBackgroundColor:'#0e7a4f', borderWidth:2 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:function(c){ return 'Netto: ' + rp(c.raw); } } } }, scales:{ x:{ grid:{ display:false }, border:{ display:false } }, y:{ grid:{ color:'#eef3ed' }, border:{ display:false }, ticks:{ callback:moneyTick } } } }
+      options:{ responsive:true, maintainAspectRatio:false, onClick:function(evt, elements){ if(elements && elements.length) openReportDetail('arus'); }, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:function(c){ return 'Netto: ' + rp(c.raw); } } } }, scales:{ x:{ grid:{ display:false }, border:{ display:false } }, y:{ grid:{ color:'#eef3ed' }, border:{ display:false }, ticks:{ callback:moneyTick } } } }
     });
   }
 
@@ -3209,7 +3385,7 @@ function finBuildInsights(filtered, val, catExp, totPem, totPeng, totalBudget, t
     var prev = finPrevPeriod(val);
     var pp = prev.split('-');
     var prevRows = allTrx.filter(function(t){ return t.th === parseInt(pp[0],10) && t.bl === parseInt(pp[1],10); });
-    var prevPeng = prevRows.reduce(function(a,t){ return a + (t.tipe === 'Pengeluaran' ? t.nom : 0); }, 0);
+    var prevPeng = finReportModel(prevRows).outflow;
     if(prevPeng > 0){
       var change = Math.round((totPeng - prevPeng) / prevPeng * 100);
       var down = change <= 0;
@@ -3248,16 +3424,258 @@ function finRenderInsights(id, items, limit){
   }).join('');
 }
 
-function finRenderReport(totPem, totPeng, saldo){
-  var rate = totPem > 0 ? Math.round((totPem - totPeng) / totPem * 100) : 0;
-  finSet('reportPemasukan', shortRp(totPem));
-  finSet('reportPengeluaran', shortRp(totPeng));
+function finRenderReport(model, saldo){
+  var rate = model.savingRate;
+  finSet('reportPemasukan', shortRp(model.income));
+  finSet('reportPengeluaran', shortRp(model.outflow));
   finSet('reportNetto', (saldo >= 0 ? '+' : '−') + shortRp(Math.abs(saldo)));
-  finSet('reportSavingRate', totPem > 0 ? rate + '%' : '—');
+  finSet('reportSavingRate', rate === null ? '—' : rate + '%');
+  finSet('reportPemasukanSub', model.incomeCount + ' transaksi pemasukan');
+  finSet('reportPengeluaranSub', 'Konsumsi ' + shortRp(model.consumption) + ' · kewajiban ' + shortRp(model.debt));
+  finSet('reportNettoSub', 'Kas masuk − total keluar');
+  finSet('reportSavingRateSub', 'Dari pemasukan · setelah kewajiban');
+  finSet('reportKonsumsi', rp(model.consumption));
+  finSet('reportKewajiban', rp(model.debt));
+  finSet('reportTotalKeluar', rp(model.outflow));
   var rrateEl = document.getElementById('reportSavingRate');
-  if(rrateEl) rrateEl.className = totPem > 0 ? (rate < 0 ? 'negative' : 'positive') : '';
+  if(rrateEl) rrateEl.className = rate === null ? '' : (rate < 0 ? 'negative' : 'positive');
   var nettoEl = document.getElementById('reportNetto');
   if(nettoEl) nettoEl.className = saldo >= 0 ? 'positive' : 'negative';
+}
+
+var reportDetailState = { type:'pengeluaran', key:'', mode:'pengeluaran', kind:'' };
+
+function openReportDetail(type, key, mode, kind){
+  reportDetailState = {
+    type: type || 'pengeluaran',
+    key: key || '',
+    mode: mode || (type === 'kategori-pemasukan' ? 'pemasukan' : 'pengeluaran'),
+    kind: kind || ''
+  };
+  showScreen('rincian');
+}
+
+function finCategorySummary(rows, mode){
+  var map = {};
+  (rows || []).forEach(function(t){
+    if(mode === 'pemasukan'){
+      if(t.tipe !== 'Pemasukan' || finIsAdjustment(t)) return;
+      var il = String(t.kat || '').trim() || 'Tanpa kategori';
+      if(!map[il]) map[il] = { label:il, total:0, count:0, kind:'income' };
+      map[il].total += Number(t.nom) || 0;
+      map[il].count++;
+      return;
+    }
+    if(t.tipe !== 'Pengeluaran') return;
+    var b = finExpenseBucket(t);
+    if(b === 'adjustment' || b === 'transfer') return;
+    var l = finExpenseLabel(t);
+    if(!map[l]) map[l] = { label:l, total:0, count:0, kind:b };
+    map[l].total += Number(t.nom) || 0;
+    map[l].count++;
+  });
+  return Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a,b){ return b.total - a.total || a.label.localeCompare(b.label, 'id'); });
+}
+
+function finCategoryRowsHtml(rows, total, mode){
+  var items = finCategorySummary(rows, mode);
+  if(!items.length) return '<div class="detail-empty">Tidak ada data kategori pada periode ini.</div>';
+  var html = '<div class="card table-card"><div class="tblwrap"><table><thead><tr><th>Kategori</th><th class="num">Total</th><th class="num">Porsi</th><th>Transaksi</th></tr></thead><tbody>';
+  items.forEach(function(it){
+    var pct = total > 0 ? Math.round(it.total / total * 100) : 0;
+    var pill = it.kind === 'debt' ? 'debt' : (it.kind === 'income' ? 'income' : 'consumption');
+    var subLabel = it.kind === 'debt' ? 'Pembayaran pokok kewajiban' : (it.kind === 'income' ? 'Sumber pemasukan' : 'Konsumsi');
+    html += '<tr class="report-cat-row" data-report-cat="' + escAttr(it.label) + '" data-report-mode="' + escAttr(mode) + '" data-report-kind="' + escAttr(it.kind) + '">'
+      + '<td><span class="report-cat-name">' + escAttr(it.label) + '</span><span class="report-cat-sub">' + subLabel + '</span></td>'
+      + '<td class="num">' + rp(it.total) + '</td>'
+      + '<td class="num">' + pct + '%</td>'
+      + '<td><span class="report-pill ' + pill + '">' + it.count + 'x</span></td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function finTxRowsHtml(rows, mode){
+  if(!rows.length) return '<div class="detail-empty">Tidak ada transaksi pada periode ini.</div>';
+  var mixed = mode === 'arus';
+  var html = '<div class="card table-card"><div class="tblwrap"><table><thead><tr><th>Tanggal</th><th>Keterangan</th>' + (mixed ? '<th>Tipe</th>' : '') + '<th>Kategori</th><th>Akun</th><th class="num">Nominal</th></tr></thead><tbody>';
+  rows.slice().sort(function(a,b){ return a.date > b.date ? -1 : a.date < b.date ? 1 : 0; }).forEach(function(t){
+    var income = t.tipe === 'Pemasukan';
+    var label = income ? (String(t.kat || '').trim() || 'Tanpa kategori') : finExpenseLabel(t);
+    var typeLabel = income ? 'Masuk' : (t.tipe === 'Pengeluaran' ? 'Keluar' : t.tipe);
+    var amount = mixed ? ((income ? '+' : '−') + rp(t.nom)) : rp(t.nom);
+    var amountClass = mixed ? (income ? 'positive' : 'negative') : '';
+    html += '<tr><td>' + escAttr(t.tgl || t.date || '') + '</td>'
+      + '<td>' + escAttr(t.ket || '') + '</td>'
+      + (mixed ? '<td>' + escAttr(typeLabel) + '</td>' : '')
+      + '<td>' + escAttr(label) + '</td>'
+      + '<td>' + escAttr(t.akun || '—') + '</td>'
+      + '<td class="num ' + amountClass + '">' + amount + '</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+  return html;
+}
+
+function finDetailSummary(items){
+  return '<div class="detail-summary">' + items.map(function(it){
+    return '<div class="stat-card"><span class="stat-label">' + escAttr(it.label) + '</span>'
+      + '<strong class="' + (it.cls || '') + '">' + escAttr(it.value) + '</strong>'
+      + '<span class="stat-sub">' + escAttr(it.sub || '') + '</span></div>';
+  }).join('') + '</div>';
+}
+
+function finDebtBreakdownHtml(model){
+  if(!model.debt) return '';
+  var keys = Object.keys(model.debtByCreditor || {}).sort(function(a,b){ return model.debtByCreditor[b] - model.debtByCreditor[a]; });
+  if(!keys.length) return '';
+  var html = '<div class="detail-section"><h3>Pembayaran kewajiban per akun</h3><div class="card table-card"><div class="tblwrap"><table><thead><tr><th>Kewajiban</th><th class="num">Dibayar</th></tr></thead><tbody>';
+  keys.forEach(function(k){ html += '<tr><td>' + escAttr(k) + '</td><td class="num">' + rp(model.debtByCreditor[k]) + '</td></tr>'; });
+  html += '</tbody></table></div></div></div>';
+  return html;
+}
+
+function finDetailTransactions(rows, mode, title){
+  return '<div class="detail-section"><h3>' + escAttr(title || 'Daftar transaksi') + '</h3>' + finTxRowsHtml(rows, mode) + '</div>';
+}
+
+function finArusGroups(rows, val){
+  var groups = {};
+  (rows || []).forEach(function(t){
+    var nom = Number(t.nom) || 0;
+    var key, label;
+    if(val === 'all'){
+      if(!t.th || !t.bl) return;
+      key = t.th + '-' + String(t.bl).padStart(2,'0');
+      label = (bn[t.bl] || t.bl) + ' ' + t.th;
+    } else {
+      if(!t.date) return;
+      key = t.date;
+      label = t.tgl || t.date;
+    }
+    if(!groups[key]) groups[key] = { key:key, label:label, income:0, expense:0 };
+    if(t.tipe === 'Pemasukan' && !finIsAdjustment(t)) groups[key].income += nom;
+    else if(t.tipe === 'Pengeluaran'){
+      var b = finExpenseBucket(t);
+      if(b === 'consumption' || b === 'debt') groups[key].expense += nom;
+    }
+  });
+  return Object.keys(groups).map(function(k){ return groups[k]; }).sort(function(a,b){ return a.key < b.key ? 1 : a.key > b.key ? -1 : 0; });
+}
+
+function renderReportDetail(){
+  var box = document.getElementById('rdContent');
+  if(!box) return;
+  var state = reportDetailState || { type:'pengeluaran' };
+  var sel = document.getElementById('filterBulan');
+  var val = sel ? (sel.value || 'all') : 'all';
+  var rows = finDetailRows();
+  var model = finReportModel(rows);
+  var period = finPeriodLabel(val);
+  var title = 'Rincian', eyebrow = 'Laporan';
+  var html = '';
+
+  if(state.type === 'pemasukan'){
+    title = 'Rincian pemasukan';
+    eyebrow = 'Laporan · Pemasukan';
+    var avg = model.incomeCount ? Math.round(model.income / model.incomeCount) : 0;
+    html += finDetailSummary([
+      { label:'Total pemasukan', value:rp(model.income), sub:model.incomeCount + ' transaksi', cls:'positive' },
+      { label:'Rata-rata', value:rp(avg), sub:'Per transaksi' },
+      { label:'Kategori', value:String(Object.keys(model.incomeByCat).length), sub:'Kategori pemasukan' },
+      { label:'Penyesuaian', value:rp(model.adjustmentIncome), sub:model.adjustmentIncomeCount + ' transaksi tidak dihitung' }
+    ]);
+    if(model.adjustmentIncome > 0) html += '<div class="detail-note">Penyesuaian saldo/opname tidak dimasukkan ke pemasukan. Nilainya tetap terlihat di akun dan neraca.</div>';
+    html += '<div class="detail-section"><h3>Pemasukan per kategori</h3>' + finCategoryRowsHtml(rows, model.income, 'pemasukan') + '</div>';
+    html += finDetailTransactions(rows.filter(function(t){ return t.tipe === 'Pemasukan' && !finIsAdjustment(t); }), 'pemasukan', 'Daftar transaksi pemasukan');
+  } else if(state.type === 'arus'){
+    title = 'Rincian arus kas';
+    eyebrow = 'Laporan · Arus kas';
+    html += finDetailSummary([
+      { label:'Pemasukan', value:rp(model.income), sub:model.incomeCount + ' transaksi', cls:'positive' },
+      { label:'Total kas keluar', value:rp(model.outflow), sub:'Konsumsi + kewajiban', cls:'negative' },
+      { label:'Netto', value:(model.net < 0 ? '−' : '+') + rp(Math.abs(model.net)), sub:'Kas masuk − kas keluar', cls:model.net < 0 ? 'negative' : 'positive' },
+      { label:'Saving rate', value:model.savingRate === null ? '—' : model.savingRate + '%', sub:'Dari pemasukan' }
+    ]);
+    var groups = finArusGroups(rows, val);
+    var table = '<div class="card table-card"><div class="tblwrap"><table><thead><tr><th>' + (val === 'all' ? 'Bulan' : 'Tanggal') + '</th><th class="num">Masuk</th><th class="num">Keluar</th><th class="num">Netto</th></tr></thead><tbody>';
+    if(!groups.length) table += '<tr><td colspan="4"><div class="detail-empty">Belum ada arus kas pada periode ini.</div></td></tr>';
+    groups.forEach(function(g){
+      var net = g.income - g.expense;
+      table += '<tr><td>' + escAttr(g.label) + '</td><td class="num positive">' + rp(g.income) + '</td><td class="num negative">' + rp(g.expense) + '</td><td class="num ' + (net < 0 ? 'negative' : 'positive') + '">' + (net < 0 ? '−' : '+') + rp(Math.abs(net)) + '</td></tr>';
+    });
+    table += '</tbody></table></div></div>';
+    html += '<div class="detail-section"><h3>' + (val === 'all' ? 'Arus kas per bulan' : 'Arus kas per tanggal') + '</h3>' + table + '</div>';
+    html += '<div class="detail-note">Transfer antar-akun, opname, dan koreksi saldo tidak masuk hitungan. Pembayaran kewajiban tetap masuk kas keluar, tetapi tidak dihitung sebagai konsumsi.</div>';
+    var consumptionRate = model.income > 0 ? Math.round((model.income - model.consumption) / model.income * 100) : null;
+    html += '<div class="detail-section"><h3>Perhitungan</h3><div class="card table-card"><div class="tblwrap"><table><tbody>'
+      + '<tr><td>Pemasukan</td><td class="num positive">' + rp(model.income) + '</td></tr>'
+      + '<tr><td>Konsumsi</td><td class="num negative">−' + rp(model.consumption) + '</td></tr>'
+      + '<tr><td>Saving rate konsumsi</td><td class="num">' + (consumptionRate === null ? '—' : consumptionRate + '%') + '</td></tr>'
+      + '<tr><td>Pembayaran kewajiban</td><td class="num negative">−' + rp(model.debt) + '</td></tr>'
+      + '<tr><td><strong>Total kas keluar</strong></td><td class="num negative"><strong>−' + rp(model.outflow) + '</strong></td></tr>'
+      + '<tr><td><strong>Netto / saving rate</strong></td><td class="num ' + (model.net < 0 ? 'negative' : 'positive') + '"><strong>' + (model.net < 0 ? '−' : '+') + rp(Math.abs(model.net)) + ' · ' + (model.savingRate === null ? '—' : model.savingRate + '%') + '</strong></td></tr>'
+      + '</tbody></table></div></div></div>';
+    html += finDetailTransactions(rows.filter(function(t){
+      if(t.tipe === 'Pemasukan') return !finIsAdjustment(t);
+      if(t.tipe === 'Pengeluaran'){
+        var b = finExpenseBucket(t);
+        return b === 'consumption' || b === 'debt';
+      }
+      return false;
+    }), 'arus', 'Transaksi yang memengaruhi arus kas');
+  } else if(state.type === 'kategori'){
+    var mode = state.mode || 'pengeluaran';
+    var catRows = rows.filter(function(t){
+      if(mode === 'pemasukan') return t.tipe === 'Pemasukan' && !finIsAdjustment(t) && (String(t.kat || '').trim() || 'Tanpa kategori') === state.key;
+      if(t.tipe !== 'Pengeluaran') return false;
+      var b = finExpenseBucket(t);
+      if(b === 'adjustment' || b === 'transfer') return false;
+      if(state.kind && b !== state.kind) return false;
+      return finExpenseLabel(t) === state.key;
+    });
+    var catTotal = catRows.reduce(function(a,t){ return a + (Number(t.nom)||0); }, 0);
+    var baseTotal = mode === 'pemasukan' ? model.income : model.outflow;
+    title = state.key || 'Rincian kategori';
+    eyebrow = 'Laporan · ' + (mode === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran');
+    html += finDetailSummary([
+      { label:'Total', value:rp(catTotal), sub:state.key || 'Kategori', cls:mode === 'pemasukan' ? 'positive' : 'negative' },
+      { label:'Transaksi', value:String(catRows.length), sub:'Jumlah baris' },
+      { label:'Rata-rata', value:rp(catRows.length ? Math.round(catTotal / catRows.length) : 0), sub:'Per transaksi' },
+      { label:'Porsi periode', value:(baseTotal > 0 ? Math.round(catTotal / baseTotal * 100) : 0) + '%', sub:'Dari total ' + (mode === 'pemasukan' ? 'pemasukan' : 'kas keluar') }
+    ]);
+    if(state.kind === 'debt'){
+      var dModel = finReportModel(catRows);
+      html += finDebtBreakdownHtml(dModel);
+    }
+    html += finDetailTransactions(catRows, mode, 'Transaksi kategori ini');
+  } else {
+    title = 'Rincian pengeluaran';
+    eyebrow = 'Laporan · Pengeluaran';
+    html += finDetailSummary([
+      { label:'Total kas keluar', value:rp(model.outflow), sub:model.expenseCount + ' transaksi', cls:'negative' },
+      { label:'Konsumsi', value:rp(model.consumption), sub:'Tanpa pembayaran kewajiban' },
+      { label:'Pembayaran kewajiban', value:rp(model.debt), sub:model.debtCount + ' transaksi' },
+      { label:'Penyesuaian', value:rp(model.adjustmentExpense), sub:model.adjustmentExpenseCount + ' tidak dihitung' }
+    ]);
+    html += '<div class="detail-note"><strong>Total kas keluar ' + rp(model.outflow) + '</strong> = konsumsi ' + rp(model.consumption) + ' + pembayaran kewajiban ' + rp(model.debt) + '. Pembayaran kewajiban tidak masuk anggaran konsumsi.</div>';
+    html += '<div class="detail-section"><h3>Pengeluaran per kategori</h3>' + finCategoryRowsHtml(rows, model.outflow, 'pengeluaran') + '</div>';
+    html += finDebtBreakdownHtml(model);
+    html += finDetailTransactions(rows.filter(function(t){
+      if(t.tipe !== 'Pengeluaran') return false;
+      var b = finExpenseBucket(t);
+      return b === 'consumption' || b === 'debt';
+    }), 'pengeluaran', 'Daftar transaksi pengeluaran');
+  }
+
+  var titleEl = document.getElementById('rdTitle');
+  var eyeEl = document.getElementById('rdEyebrow');
+  var periodEl = document.getElementById('rdPeriod');
+  if(titleEl) titleEl.textContent = title;
+  if(eyeEl) eyeEl.textContent = eyebrow;
+  if(periodEl) periodEl.textContent = period;
+  box.innerHTML = html;
+  setTimeout(function(){ try { labelTables(); } catch(e){} }, 0);
 }
 
 function finRenderHomeTrx(filtered){
@@ -3302,20 +3720,16 @@ function applyFilter() {
   finSet('kpiPeriodLabel', period);
   finSet('reportPeriodLabel', period);
 
-  var totPem = 0, totPeng = 0;
-  var catExp = {}, anggaranUsage = {};
-  filtered.forEach(function(t){
-    if(t.tipe === 'Pemasukan'){ totPem += t.nom; }
-    else if(t.tipe === 'Pengeluaran'){
-      totPeng += t.nom;
-      if(!/opname|koreksi|transfer|hutang/i.test(t.kat)){
-        catExp[t.kat] = (catExp[t.kat] || 0) + t.nom;
-        anggaranUsage[t.kat] = (anggaranUsage[t.kat] || 0) + t.nom;
-      }
-    }
+  var reportModel = finReportModel(filtered);
+  var totPem = reportModel.income;
+  var totPeng = reportModel.outflow;
+  var catExp = finOutflowCategoryMap(reportModel);
+  var anggaranUsage = {};
+  Object.keys(reportModel.expenseByCat).forEach(function(k){
+    anggaranUsage[k] = reportModel.expenseByCat[k];
   });
   var saldo = totPem - totPeng;
-  var savingRate = totPem > 0 ? Math.round((totPem - totPeng) / totPem * 100) : null;
+  var savingRate = reportModel.savingRate;
   finSet('kpiTrxCount', filtered.length);
   finSet('kpiPemasukan', shortRp(totPem));
   finSet('kpiPengeluaran', shortRp(totPeng));
@@ -3326,7 +3740,7 @@ function applyFilter() {
   var rateEl = document.getElementById('kpiSavingRate');
   if(rateEl) rateEl.className = savingRate !== null && savingRate < 0 ? 'negative' : (savingRate !== null ? 'positive' : '');
 
-  var expSorted = Object.keys(catExp).map(function(k){ return [k, catExp[k]]; }).sort(function(a,b){ return b[1] - a[1]; }).slice(0, 10);
+  var expSorted = finChartCategoryEntries(catExp, 8);
   if(charts.expenseCat && charts.expenseCat.data){
     charts.expenseCat.data.labels = expSorted.map(function(e){ return e[0]; });
     charts.expenseCat.data.datasets[0].data = expSorted.map(function(e){ return e[1]; });
@@ -3348,8 +3762,9 @@ function applyFilter() {
       budgetUsage = {};
       allTrx.forEach(function(t){
         if(t.th + '-' + String(t.bl).padStart(2,'0') !== latestKey) return;
-        if(t.tipe === 'Pengeluaran' && !/opname|koreksi|transfer|hutang/i.test(t.kat)){
-          budgetUsage[t.kat] = (budgetUsage[t.kat] || 0) + t.nom;
+        if(finExpenseBucket(t) === 'consumption'){
+          var bk = String(t.kat || '').trim() || 'Tanpa kategori';
+          budgetUsage[bk] = (budgetUsage[bk] || 0) + t.nom;
         }
       });
     }
@@ -3454,10 +3869,12 @@ function applyFilter() {
   try { renderTrxAll(); } catch(e){}
   finRenderHomeTrx(filtered);
 
-  finRenderReport(totPem, totPeng, saldo);
+  finRenderReport(reportModel, saldo);
   var insights = finBuildInsights(filtered, val, catExp, totPem, totPeng, totalBudget, totalUsed, budgetPeriod);
   finRenderInsights('homeInsight', insights, 2);
   finRenderInsights('reportInsight', insights, 99);
+  window.__lastReportModel = reportModel;
+  if(currentScreen === 'rincian'){ try { renderReportDetail(); } catch(e){} }
 }
 
 var FIN_ENDPOINT = '';
@@ -4604,6 +5021,28 @@ document.addEventListener('DOMContentLoaded', function(){
     katSearch.addEventListener('keydown', function(ev){ if(ev.key === 'Escape') finCloseKat(); });
   }
 
+  var reportSummary = document.querySelector('.report-summary');
+  if(reportSummary){
+    reportSummary.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-report]') : null;
+      if(b) openReportDetail(b.getAttribute('data-report'));
+    });
+    reportSummary.addEventListener('keydown', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-report]') : null;
+      if(!b || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+      ev.preventDefault();
+      openReportDetail(b.getAttribute('data-report'));
+    });
+  }
+  var reportDetail = document.getElementById('rdContent');
+  if(reportDetail){
+    reportDetail.addEventListener('click', function(ev){
+      var b = ev.target.closest ? ev.target.closest('[data-report-cat]') : null;
+      if(!b) return;
+      openReportDetail('kategori', b.getAttribute('data-report-cat'), b.getAttribute('data-report-mode'), b.getAttribute('data-report-kind'));
+    });
+  }
+
   var akunBody = document.getElementById('akunTableBody');
   if(akunBody){
     akunBody.addEventListener('click', function(ev){
@@ -4711,7 +5150,7 @@ function finPackChip(el){
 }
 
 /* ===== SHELL APLIKASI: pindah layar ===== */
-var SCREENS = ['beranda','transaksi','laporan','target','akun','pengaturan'];
+var SCREENS = ['beranda','transaksi','laporan','rincian','target','akun','pengaturan'];
 var currentScreen = 'beranda';
 
 function resizeCharts(){
@@ -4740,9 +5179,10 @@ function showScreen(name, noHash, tab){
     else el.setAttribute('hidden','');
   });
   var nav = document.getElementById('bottomnav');
+  var navName = name === 'rincian' ? 'laporan' : name;
   if(nav){
     Array.prototype.forEach.call(nav.querySelectorAll('button[data-nav]'), function(b){
-      var active = b.getAttribute('data-nav') === name;
+      var active = b.getAttribute('data-nav') === navName;
       b.classList.toggle('on', active);
       if(active) b.setAttribute('aria-current','page');
       else b.removeAttribute('aria-current');
@@ -4758,6 +5198,7 @@ function showScreen(name, noHash, tab){
     showTargetTab(tab || 'tabungan');
   }
   if(name === 'laporan'){ try { applyFilter(); } catch(e){} }
+  if(name === 'rincian'){ try { renderReportDetail(); } catch(e){} }
   if(name === 'akun'){ try { applyFilter(); } catch(e){} }
   if(name === 'beranda'){ try { applyFilter(); } catch(e){} }
   window.scrollTo(0,0);
@@ -5559,6 +6000,7 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.1.3</strong><br>Laporan pengeluaran kini memisahkan konsumsi dan pembayaran kewajiban; total kategori sama dengan total kas keluar. Ditambah halaman rincian pemasukan, pengeluaran, arus kas, dan kategori.</p>'
     + '<p><strong>Changelog v1.1.2</strong><br>Tombol catat pelunasan non-kas dari pendapatan usaha pada rincian kewajiban, tanpa mengurangi saldo BSI/DANA/Tunai.</p>'
     + '<p><strong>Changelog v1.1.1</strong><br>Indikator kewajiban aktif di Beranda, penanda jumlah kewajiban di menu Akun, dan status pembayaran terakhir per kewajiban.</p>'
     + '<p><strong>Changelog v1.1.0</strong><br>Pengaturan dirapikan, mode privasi dan format angka, ekspor CSV/JSON, serta pengelolaan akun, kategori, target, dan rencana saving.</p>'
