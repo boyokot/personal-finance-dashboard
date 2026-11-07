@@ -1364,7 +1364,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   .stat-card { padding: 15px 16px; }
   .stat-card > strong { font-size: 21px; }
   .report-summary { grid-template-columns: repeat(4, 1fr); }
-  .report-breakdown { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .report-breakdown { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .detail-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .chart-grid { grid-template-columns: 1fr 1fr; }
   .target-overview { grid-template-columns: repeat(3, 1fr); }
@@ -1622,8 +1622,9 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       </div>
       <div class="report-breakdown" aria-label="Rincian pengeluaran">
         <div class="stat-card"><span class="stat-label">Konsumsi</span><strong id="reportKonsumsi">—</strong><span class="stat-sub">Tanpa pembayaran kewajiban</span></div>
-        <div class="stat-card"><span class="stat-label">Pembayaran kewajiban</span><strong id="reportKewajiban">—</strong><span class="stat-sub">Kartu kredit, Spaylater, pinjaman</span></div>
-        <div class="stat-card total"><span class="stat-label">Total kas keluar</span><strong id="reportTotalKeluar">—</strong><span class="stat-sub">Konsumsi + kewajiban</span></div>
+        <div class="stat-card"><span class="stat-label">Kewajiban dari kas</span><strong id="reportKewajibanKas">—</strong><span class="stat-sub">Dari rekening/dompet</span></div>
+        <div class="stat-card"><span class="stat-label">Pelunasan non-kas</span><strong id="reportKewajibanNonKas">—</strong><span class="stat-sub">Dari pendapatan usaha</span></div>
+        <div class="stat-card total"><span class="stat-label">Total penggunaan dana</span><strong id="reportTotalKeluar">—</strong><span class="stat-sub">Konsumsi + semua kewajiban</span></div>
       </div>
       <div class="insight-list" id="reportInsight" style="margin-top:10px"></div>
       <div class="chart-grid">
@@ -1637,7 +1638,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         </div>
         <div class="card chart-card">
           <div class="chart-card-head"><h3>Pengeluaran per kategori</h3><button type="button" class="link-btn" onclick="openReportDetail('pengeluaran')">Rincian →</button></div>
-          <div class="chart-note">Termasuk pembayaran kewajiban. Klik kategori untuk melihat transaksinya.</div>
+          <div class="chart-note">Termasuk kewajiban dari kas dan pelunasan non-kas. Klik kategori untuk melihat transaksinya.</div>
           <div class="chart-box"><canvas id="expenseCat"></canvas></div>
         </div>
         <div class="card chart-card">
@@ -1647,7 +1648,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
       </div>
       <div class="card" style="margin-top:10px">
         <h3>Catatan laporan</h3>
-        <div class="report-note">Transfer antar-akun, opname, dan koreksi saldo tidak dihitung sebagai pemasukan atau pengeluaran. <strong>Pengeluaran</strong> adalah total kas keluar: konsumsi + pembayaran kewajiban. <strong>Anggaran</strong> hanya memakai konsumsi, sehingga tidak tercampur dengan pembayaran kartu kredit/Spaylater. Angka laporan mengikuti bulan yang dipilih di bagian atas.</div>
+        <div class="report-note">Transfer antar-akun, opname, dan koreksi saldo tidak dihitung sebagai pemasukan atau pengeluaran. <strong>Pengeluaran</strong> adalah total penggunaan dana: konsumsi + kewajiban dari kas + pelunasan non-kas. Pelunasan non-kas dari pendapatan usaha tidak mengurangi saldo BSI/DANA/Tunai. <strong>Anggaran</strong> hanya memakai konsumsi. Angka laporan mengikuti bulan yang dipilih di bagian atas.</div>
       </div>
     </section>
 
@@ -2024,7 +2025,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.3';
+const APP_VERSION = 'v1.1.4';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
@@ -2977,6 +2978,13 @@ function finIsDebtPayment(t){
   var kat = String(t.kat || '').trim().toLowerCase();
   return kat === 'hutang' || kat === 'pembayaran pinjaman' || kat === 'bayar pinjaman';
 }
+function finIsNonCashDebtPayment(t){
+  if(!finIsDebtPayment(t)) return false;
+  var akun = String(t.akun || '').trim();
+  if(finIsLiabilityAccount(akun)) return true;
+  if(/^(kartu kredit|spaylater)$/i.test(akun)) return true;
+  return false;
+}
 function finExpenseBucket(t){
   if(!t || t.tipe !== 'Pengeluaran') return '';
   if(finIsAdjustment(t)) return 'adjustment';
@@ -2986,16 +2994,16 @@ function finExpenseBucket(t){
 }
 function finExpenseLabel(t){
   var b = finExpenseBucket(t);
-  if(b === 'debt') return 'Pembayaran kewajiban';
+  if(b === 'debt') return finIsNonCashDebtPayment(t) ? 'Pelunasan kewajiban (non-kas)' : 'Pembayaran kewajiban (kas)';
   if(b === 'adjustment') return 'Penyesuaian';
   if(b === 'transfer') return 'Transfer (tidak dihitung)';
   return String(t.kat || '').trim() || 'Tanpa kategori';
 }
 function finReportModel(rows){
   var m = {
-    income:0, consumption:0, debt:0, adjustment:0, adjustmentIncome:0, adjustmentExpense:0, outflow:0, net:0, savingRate:null,
-    incomeByCat:{}, expenseByCat:{}, debtByCreditor:{},
-    incomeCount:0, expenseCount:0, debtCount:0, adjustmentCount:0, adjustmentIncomeCount:0, adjustmentExpenseCount:0,
+    income:0, consumption:0, debt:0, debtCash:0, debtNonCash:0, adjustment:0, adjustmentIncome:0, adjustmentExpense:0, outflow:0, net:0, savingRate:null,
+    incomeByCat:{}, expenseByCat:{}, debtByCreditor:{}, debtByCreditorCash:{}, debtByCreditorNonCash:{},
+    incomeCount:0, expenseCount:0, debtCount:0, debtCashCount:0, debtNonCashCount:0, adjustmentCount:0, adjustmentIncomeCount:0, adjustmentExpenseCount:0,
     transfer:0, piutang:0, newDebt:0
   };
   (rows || []).forEach(function(t){
@@ -3021,6 +3029,13 @@ function finReportModel(rows){
         m.debt += nom; m.debtCount++;
         var dk = hutangAkun(t) || 'Kewajiban';
         m.debtByCreditor[dk] = (m.debtByCreditor[dk] || 0) + nom;
+        if(finIsNonCashDebtPayment(t)){
+          m.debtNonCash += nom; m.debtNonCashCount++;
+          m.debtByCreditorNonCash[dk] = (m.debtByCreditorNonCash[dk] || 0) + nom;
+        } else {
+          m.debtCash += nom; m.debtCashCount++;
+          m.debtByCreditorCash[dk] = (m.debtByCreditorCash[dk] || 0) + nom;
+        }
       } else {
         m.consumption += nom;
         var ek = String(t.kat || '').trim() || 'Tanpa kategori';
@@ -3043,7 +3058,8 @@ function finOutflowCategoryMap(model){
   Object.keys((model && model.expenseByCat) || {}).forEach(function(k){
     map[k] = model.expenseByCat[k];
   });
-  if(model && model.debt > 0) map['Pembayaran kewajiban'] = model.debt;
+  if(model && model.debtCash > 0) map['Pembayaran kewajiban (kas)'] = model.debtCash;
+  if(model && model.debtNonCash > 0) map['Pelunasan kewajiban (non-kas)'] = model.debtNonCash;
   return map;
 }
 function finChartCategoryEntries(map, limit){
@@ -3149,7 +3165,7 @@ function initCharts() {
     charts.expenseCat = new Chart(elExpense, {
       type:'doughnut',
       data:{ labels:[], datasets:[{ data:[], backgroundColor:['#0e7a4f','#4f8fda','#d8b24a','#6d5bb3','#d24b4b','#55a58a','#c4783e','#8b6bb5','#7a9c67','#bfc9c1'], borderColor:'#ffffff', borderWidth:3, hoverOffset:4 }] },
-      options:{ cutout:'66%', responsive:true, maintainAspectRatio:false, onClick:function(evt, elements){ if(!elements || !elements.length) return; var label=String(this.data.labels[elements[0].index] || ''); if(label.indexOf('Lainnya') === 0) openReportDetail('pengeluaran'); else openReportDetail('kategori', label, 'pengeluaran', label === 'Pembayaran kewajiban' ? 'debt' : 'consumption'); }, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, padding:10, font:{size:10}, usePointStyle:true, pointStyle:'circle' } }, tooltip:{ callbacks:{ label:function(c){ return c.label + ': ' + rp(c.raw); } } } } }
+      options:{ cutout:'66%', responsive:true, maintainAspectRatio:false, onClick:function(evt, elements){ if(!elements || !elements.length) return; var label=String(this.data.labels[elements[0].index] || ''); if(label.indexOf('Lainnya') === 0) openReportDetail('pengeluaran'); else openReportDetail('kategori', label, 'pengeluaran', label.toLowerCase().indexOf('kewajiban') >= 0 ? 'debt' : 'consumption'); }, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:9, boxHeight:9, padding:10, font:{size:10}, usePointStyle:true, pointStyle:'circle' } }, tooltip:{ callbacks:{ label:function(c){ return c.label + ': ' + rp(c.raw); } } } } }
     });
   }
 
@@ -3431,11 +3447,12 @@ function finRenderReport(model, saldo){
   finSet('reportNetto', (saldo >= 0 ? '+' : '−') + shortRp(Math.abs(saldo)));
   finSet('reportSavingRate', rate === null ? '—' : rate + '%');
   finSet('reportPemasukanSub', model.incomeCount + ' transaksi pemasukan');
-  finSet('reportPengeluaranSub', 'Konsumsi ' + shortRp(model.consumption) + ' · kewajiban ' + shortRp(model.debt));
-  finSet('reportNettoSub', 'Kas masuk − total keluar');
-  finSet('reportSavingRateSub', 'Dari pemasukan · setelah kewajiban');
+  finSet('reportPengeluaranSub', 'Konsumsi ' + shortRp(model.consumption) + ' · kas ' + shortRp(model.debtCash) + ' · non-kas ' + shortRp(model.debtNonCash));
+  finSet('reportNettoSub', 'Kas masuk − total penggunaan dana');
+  finSet('reportSavingRateSub', 'Dari pemasukan · setelah semua kewajiban');
   finSet('reportKonsumsi', rp(model.consumption));
-  finSet('reportKewajiban', rp(model.debt));
+  finSet('reportKewajibanKas', rp(model.debtCash));
+  finSet('reportKewajibanNonKas', rp(model.debtNonCash));
   finSet('reportTotalKeluar', rp(model.outflow));
   var rrateEl = document.getElementById('reportSavingRate');
   if(rrateEl) rrateEl.className = rate === null ? '' : (rate < 0 ? 'negative' : 'positive');
@@ -3485,7 +3502,9 @@ function finCategoryRowsHtml(rows, total, mode){
   items.forEach(function(it){
     var pct = total > 0 ? Math.round(it.total / total * 100) : 0;
     var pill = it.kind === 'debt' ? 'debt' : (it.kind === 'income' ? 'income' : 'consumption');
-    var subLabel = it.kind === 'debt' ? 'Pembayaran pokok kewajiban' : (it.kind === 'income' ? 'Sumber pemasukan' : 'Konsumsi');
+    var subLabel = it.kind === 'debt'
+      ? (it.label.indexOf('non-kas') >= 0 ? 'Dari pendapatan usaha / bukan saldo kas' : 'Dari kas atau rekening')
+      : (it.kind === 'income' ? 'Sumber pemasukan' : 'Konsumsi');
     html += '<tr class="report-cat-row" data-report-cat="' + escAttr(it.label) + '" data-report-mode="' + escAttr(mode) + '" data-report-kind="' + escAttr(it.kind) + '">'
       + '<td><span class="report-cat-name">' + escAttr(it.label) + '</span><span class="report-cat-sub">' + subLabel + '</span></td>'
       + '<td class="num">' + rp(it.total) + '</td>'
@@ -3529,8 +3548,12 @@ function finDebtBreakdownHtml(model){
   if(!model.debt) return '';
   var keys = Object.keys(model.debtByCreditor || {}).sort(function(a,b){ return model.debtByCreditor[b] - model.debtByCreditor[a]; });
   if(!keys.length) return '';
-  var html = '<div class="detail-section"><h3>Pembayaran kewajiban per akun</h3><div class="card table-card"><div class="tblwrap"><table><thead><tr><th>Kewajiban</th><th class="num">Dibayar</th></tr></thead><tbody>';
-  keys.forEach(function(k){ html += '<tr><td>' + escAttr(k) + '</td><td class="num">' + rp(model.debtByCreditor[k]) + '</td></tr>'; });
+  var cash = model.debtByCreditorCash || {}, nonCash = model.debtByCreditorNonCash || {};
+  var html = '<div class="detail-section"><h3>Rincian pembayaran kewajiban</h3><div class="card table-card"><div class="tblwrap"><table><thead><tr><th>Kewajiban</th><th class="num">Dari kas</th><th class="num">Non-kas</th><th class="num">Total</th></tr></thead><tbody>';
+  keys.forEach(function(k){
+    html += '<tr><td>' + escAttr(k) + '</td><td class="num">' + rp(cash[k] || 0) + '</td><td class="num">' + rp(nonCash[k] || 0) + '</td><td class="num"><strong>' + rp(model.debtByCreditor[k]) + '</strong></td></tr>';
+  });
+  html += '<tr style="font-weight:800;border-top:2px solid var(--line-strong)"><td>Total</td><td class="num">' + rp(model.debtCash) + '</td><td class="num">' + rp(model.debtNonCash) + '</td><td class="num">' + rp(model.debt) + '</td></tr>';
   html += '</tbody></table></div></div></div>';
   return html;
 }
@@ -3593,8 +3616,8 @@ function renderReportDetail(){
     eyebrow = 'Laporan · Arus kas';
     html += finDetailSummary([
       { label:'Pemasukan', value:rp(model.income), sub:model.incomeCount + ' transaksi', cls:'positive' },
-      { label:'Total kas keluar', value:rp(model.outflow), sub:'Konsumsi + kewajiban', cls:'negative' },
-      { label:'Netto', value:(model.net < 0 ? '−' : '+') + rp(Math.abs(model.net)), sub:'Kas masuk − kas keluar', cls:model.net < 0 ? 'negative' : 'positive' },
+      { label:'Total penggunaan dana', value:rp(model.outflow), sub:'Konsumsi + kewajiban kas + non-kas', cls:'negative' },
+      { label:'Netto', value:(model.net < 0 ? '−' : '+') + rp(Math.abs(model.net)), sub:'Kas masuk − total penggunaan dana', cls:model.net < 0 ? 'negative' : 'positive' },
       { label:'Saving rate', value:model.savingRate === null ? '—' : model.savingRate + '%', sub:'Dari pemasukan' }
     ]);
     var groups = finArusGroups(rows, val);
@@ -3606,14 +3629,15 @@ function renderReportDetail(){
     });
     table += '</tbody></table></div></div>';
     html += '<div class="detail-section"><h3>' + (val === 'all' ? 'Arus kas per bulan' : 'Arus kas per tanggal') + '</h3>' + table + '</div>';
-    html += '<div class="detail-note">Transfer antar-akun, opname, dan koreksi saldo tidak masuk hitungan. Pembayaran kewajiban tetap masuk kas keluar, tetapi tidak dihitung sebagai konsumsi.</div>';
+    html += '<div class="detail-note">Transfer antar-akun, opname, dan koreksi saldo tidak masuk hitungan. Pembayaran kewajiban dari kas dan pelunasan non-kas tetap masuk total penggunaan dana, tetapi tidak dihitung sebagai konsumsi.</div>';
     var consumptionRate = model.income > 0 ? Math.round((model.income - model.consumption) / model.income * 100) : null;
     html += '<div class="detail-section"><h3>Perhitungan</h3><div class="card table-card"><div class="tblwrap"><table><tbody>'
       + '<tr><td>Pemasukan</td><td class="num positive">' + rp(model.income) + '</td></tr>'
       + '<tr><td>Konsumsi</td><td class="num negative">−' + rp(model.consumption) + '</td></tr>'
       + '<tr><td>Saving rate konsumsi</td><td class="num">' + (consumptionRate === null ? '—' : consumptionRate + '%') + '</td></tr>'
-      + '<tr><td>Pembayaran kewajiban</td><td class="num negative">−' + rp(model.debt) + '</td></tr>'
-      + '<tr><td><strong>Total kas keluar</strong></td><td class="num negative"><strong>−' + rp(model.outflow) + '</strong></td></tr>'
+      + '<tr><td>Kewajiban dari kas</td><td class="num negative">−' + rp(model.debtCash) + '</td></tr>'
+      + '<tr><td>Pelunasan non-kas</td><td class="num negative">−' + rp(model.debtNonCash) + '</td></tr>'
+      + '<tr><td><strong>Total penggunaan dana</strong></td><td class="num negative"><strong>−' + rp(model.outflow) + '</strong></td></tr>'
       + '<tr><td><strong>Netto / saving rate</strong></td><td class="num ' + (model.net < 0 ? 'negative' : 'positive') + '"><strong>' + (model.net < 0 ? '−' : '+') + rp(Math.abs(model.net)) + ' · ' + (model.savingRate === null ? '—' : model.savingRate + '%') + '</strong></td></tr>'
       + '</tbody></table></div></div></div>';
     html += finDetailTransactions(rows.filter(function(t){
@@ -3642,7 +3666,7 @@ function renderReportDetail(){
       { label:'Total', value:rp(catTotal), sub:state.key || 'Kategori', cls:mode === 'pemasukan' ? 'positive' : 'negative' },
       { label:'Transaksi', value:String(catRows.length), sub:'Jumlah baris' },
       { label:'Rata-rata', value:rp(catRows.length ? Math.round(catTotal / catRows.length) : 0), sub:'Per transaksi' },
-      { label:'Porsi periode', value:(baseTotal > 0 ? Math.round(catTotal / baseTotal * 100) : 0) + '%', sub:'Dari total ' + (mode === 'pemasukan' ? 'pemasukan' : 'kas keluar') }
+      { label:'Porsi periode', value:(baseTotal > 0 ? Math.round(catTotal / baseTotal * 100) : 0) + '%', sub:'Dari total ' + (mode === 'pemasukan' ? 'pemasukan' : 'penggunaan dana') }
     ]);
     if(state.kind === 'debt'){
       var dModel = finReportModel(catRows);
@@ -3653,12 +3677,13 @@ function renderReportDetail(){
     title = 'Rincian pengeluaran';
     eyebrow = 'Laporan · Pengeluaran';
     html += finDetailSummary([
-      { label:'Total kas keluar', value:rp(model.outflow), sub:model.expenseCount + ' transaksi', cls:'negative' },
+      { label:'Total penggunaan dana', value:rp(model.outflow), sub:model.expenseCount + ' transaksi', cls:'negative' },
       { label:'Konsumsi', value:rp(model.consumption), sub:'Tanpa pembayaran kewajiban' },
-      { label:'Pembayaran kewajiban', value:rp(model.debt), sub:model.debtCount + ' transaksi' },
-      { label:'Penyesuaian', value:rp(model.adjustmentExpense), sub:model.adjustmentExpenseCount + ' tidak dihitung' }
+      { label:'Kewajiban dari kas', value:rp(model.debtCash), sub:model.debtCashCount + ' transaksi' },
+      { label:'Pelunasan non-kas', value:rp(model.debtNonCash), sub:model.debtNonCashCount + ' transaksi' }
     ]);
-    html += '<div class="detail-note"><strong>Total kas keluar ' + rp(model.outflow) + '</strong> = konsumsi ' + rp(model.consumption) + ' + pembayaran kewajiban ' + rp(model.debt) + '. Pembayaran kewajiban tidak masuk anggaran konsumsi.</div>';
+    html += '<div class="detail-note"><strong>Total penggunaan dana ' + rp(model.outflow) + '</strong> = konsumsi ' + rp(model.consumption) + ' + kewajiban dari kas ' + rp(model.debtCash) + ' + pelunasan non-kas ' + rp(model.debtNonCash) + '. Pelunasan non-kas tidak mengurangi saldo BSI/DANA/Tunai dan tidak masuk anggaran konsumsi.</div>';
+    if(model.adjustmentExpense > 0) html += '<div class="detail-note">Penyesuaian sebesar ' + rp(model.adjustmentExpense) + ' tidak dihitung sebagai pengeluaran.</div>';
     html += '<div class="detail-section"><h3>Pengeluaran per kategori</h3>' + finCategoryRowsHtml(rows, model.outflow, 'pengeluaran') + '</div>';
     html += finDebtBreakdownHtml(model);
     html += finDetailTransactions(rows.filter(function(t){
@@ -6000,7 +6025,8 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
-    + '<p><strong>Changelog v1.1.3</strong><br>Laporan pengeluaran kini memisahkan konsumsi dan pembayaran kewajiban; total kategori sama dengan total kas keluar. Ditambah halaman rincian pemasukan, pengeluaran, arus kas, dan kategori.</p>'
+    + '<p><strong>Changelog v1.1.4</strong><br>Pembayaran kewajiban dari kas dan pelunasan non-kas dari pendapatan usaha dipisahkan, sehingga laporan bulanan tidak mencampur keduanya.</p>'
+    + '<p><strong>Changelog v1.1.3</strong><br>Laporan pengeluaran memisahkan konsumsi dan pembayaran kewajiban; total kategori sama dengan total penggunaan dana. Ditambah halaman rincian pemasukan, pengeluaran, arus kas, dan kategori.</p>'
     + '<p><strong>Changelog v1.1.2</strong><br>Tombol catat pelunasan non-kas dari pendapatan usaha pada rincian kewajiban, tanpa mengurangi saldo BSI/DANA/Tunai.</p>'
     + '<p><strong>Changelog v1.1.1</strong><br>Indikator kewajiban aktif di Beranda, penanda jumlah kewajiban di menu Akun, dan status pembayaran terakhir per kewajiban.</p>'
     + '<p><strong>Changelog v1.1.0</strong><br>Pengaturan dirapikan, mode privasi dan format angka, ekspor CSV/JSON, serta pengelolaan akun, kategori, target, dan rencana saving.</p>'
