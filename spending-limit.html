@@ -75,10 +75,11 @@ async function pingEndpoint(u){try{let r=await fetch(u+(u.indexOf('?')>=0?'&':'?
 async function loadEndpoint(){
   let candidates=[];
   function add(v){v=normalizeEndpoint(v);if(v&&!candidates.includes(v))candidates.push(v);}
-  try{add(localStorage.getItem(ENDPOINT_LS));}catch(e){}
+  // Endpoint resmi lebih dulu; URL lama di localStorage hanya fallback.
   for(const u of [ENDPOINT_RAW,'endpoint.txt','https://boyokot.github.io/personal-finance-dashboard/endpoint.txt']){
     try{let r=await fetch(u+'?_='+Date.now(),{cache:'no-store'});if(r.ok)add(await r.text());}catch(e){}
   }
+  try{add(localStorage.getItem(ENDPOINT_LS));}catch(e){}
   for(const u of candidates){if(await pingEndpoint(u)){FIN_ENDPOINT=u;try{localStorage.setItem(ENDPOINT_LS,u);}catch(e){}return u;}}
   return '';
 }
