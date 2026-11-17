@@ -2025,7 +2025,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.4';
+const APP_VERSION = 'v1.1.5';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
@@ -3953,14 +3953,19 @@ function finLoadEndpoint(cb){
     v = finNormalizeEndpoint(v || '');
     if(v && cands.indexOf(v) < 0) cands.push(v);
   }
-  try{ add(localStorage.getItem(FIN_LS_KEY)); }catch(e){}
-  var urls = [FIN_RAW_URL, FIN_ENDPOINT_FILE, 'https://boyokot.github.io/personal-finance-dashboard/endpoint.txt'];
+  // Endpoint resmi selalu dicek lebih dulu. URL lama di localStorage hanya
+  // dipakai sebagai fallback agar browser tidak terus memakai deployment lama
+  // yang belum mendukung master data.
+  var urls = [FIN_ENDPOINT_FILE, 'https://boyokot.github.io/personal-finance-dashboard/endpoint.txt', FIN_RAW_URL];
   Promise.all(urls.map(function(u){
     return fetch(u + '?_=' + Date.now(), {cache:'no-store'})
       .then(function(r){ return r.ok ? r.text() : ''; })
-      .then(function(t){ add(t); })
-      .catch(function(){});
-  })).then(function(){
+      .catch(function(){ return ''; });
+  })).then(function(texts){
+    // Tambahkan sesuai urutan URL, bukan urutan respons jaringan, supaya
+    // endpoint resmi pertama selalu dicoba lebih dulu.
+    for(var i = 0; i < texts.length; i++) add(texts[i]);
+    try{ add(localStorage.getItem(FIN_LS_KEY)); }catch(e){}
     if(!cands.length){ cb(FIN_ENDPOINT); return; }
     return Promise.all(cands.map(function(v){
       return finPingUrl(v, 6000).then(function(ok){ return ok ? v : null; });
@@ -6025,6 +6030,7 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.1.5</strong><br>Dashboard selalu memilih endpoint resmi terbaru dari <code>endpoint.txt</code>; URL deployment lama di localStorage tidak dipakai lebih dulu.</p>'
     + '<p><strong>Changelog v1.1.4</strong><br>Pembayaran kewajiban dari kas dan pelunasan non-kas dari pendapatan usaha dipisahkan, sehingga laporan bulanan tidak mencampur keduanya.</p>'
     + '<p><strong>Changelog v1.1.3</strong><br>Laporan pengeluaran memisahkan konsumsi dan pembayaran kewajiban; total kategori sama dengan total penggunaan dana. Ditambah halaman rincian pemasukan, pengeluaran, arus kas, dan kategori.</p>'
     + '<p><strong>Changelog v1.1.2</strong><br>Tombol catat pelunasan non-kas dari pendapatan usaha pada rincian kewajiban, tanpa mengurangi saldo BSI/DANA/Tunai.</p>'
