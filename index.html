@@ -814,7 +814,6 @@ td.num { font-weight: 800; }
 .settings-card h3 { margin-bottom: 5px; }
 .settings-card .sub { margin-bottom: 10px; font-size: 10.5px; }
 .setrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
-#setTema button.aktif, #setFormat button.aktif { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
 .pin-change-btn { width: 100%; margin-top: 9px; }
 #pinChangeMsg { min-height: 16px; margin-top: 8px; margin-bottom: 0; }
 .settings-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--warning-soft); color: var(--warning); font-size: 10.5px; line-height: 1.5; }
@@ -831,7 +830,6 @@ td.num { font-weight: 800; }
 .settings-export select { min-height: 40px; }
 .settings-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
 .settings-actions .secondary-btn { flex: 1 1 auto; }
-.privacy-on { background: var(--primary-soft) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
 .manage-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 8px; }
 .manage-toolbar .sub { margin: 0; }
 .manage-list { display: grid; gap: 6px; margin: 8px 0 12px; }
@@ -1756,26 +1754,6 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         <div><div class="eyebrow">Preferensi</div><h2>Pengaturan</h2></div>
       </div>
       <div class="card settings-card">
-        <h3>Tampilan</h3>
-        <div class="sub">Preferensi ini disimpan di perangkat ini.</div>
-        <div class="fin-label">Tema aksen</div>
-        <div class="setrow" id="setTema">
-          <button type="button" class="secondary-btn" data-tema="lime" onclick="setTema('lime')">Hijau</button>
-          <button type="button" class="secondary-btn" data-tema="ungu" onclick="setTema('ungu')">Ungu</button>
-          <button type="button" class="secondary-btn" data-tema="coral" onclick="setTema('coral')">Coral</button>
-        </div>
-        <div class="fin-label" style="margin-top:13px">Format angka</div>
-        <div class="setrow" id="setFormat">
-          <button type="button" class="secondary-btn" data-format="ringkas" onclick="setFormatMode('ringkas')">Ringkas</button>
-          <button type="button" class="secondary-btn" data-format="penuh" onclick="setFormatMode('penuh')">Penuh</button>
-        </div>
-        <div class="fin-label" style="margin-top:13px">Mode privasi</div>
-        <div class="setrow">
-          <button type="button" class="secondary-btn" id="btnPrivacy" onclick="togglePrivacy()" aria-pressed="false">Sembunyikan saldo</button>
-        </div>
-      </div>
-
-      <div class="card settings-card">
         <h3>Keuangan</h3>
         <div class="sub">Kelola master data dan rencana keuangan.</div>
         <div class="settings-note" id="masterNotice" hidden>Backend belum mendukung master data. Deploy <strong>Code.gs</strong> versi terbaru dulu.</div>
@@ -2025,11 +2003,10 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.5';
+const APP_VERSION = 'v1.1.6';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
 let akunData = [], kategoriData = [], rencanaData = [];
 let masterReady = false;
-var FORMAT_MODE = 'ringkas', PRIVACY_MODE = false;
 let charts = {};
 const bm = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'Mei':5,'May':5,'Jun':6,'Jul':7,'Agu':8,'Aug':8,'Sep':9,'Okt':10,'Oct':10,'Nov':11,'Des':12,'Dec':12};
 const bn = {1:'Januari',2:'Februari',3:'Maret',4:'April',5:'Mei',6:'Juni',7:'Juli',8:'Agustus',9:'September',10:'Oktober',11:'November',12:'Desember'};
@@ -2040,8 +2017,8 @@ const savingT1 = [
   {label:'Dana Lebaran',amount:125000,color:'#ffd43b',note:'Target tahunan Rp1,5 juta'},
 ];
 
-function rp(v){ if(PRIVACY_MODE) return 'Rp ••••'; v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
-function shortRp(v){ if(PRIVACY_MODE) return 'Rp ••••'; if(FORMAT_MODE==='penuh') return rp(v); v=Math.abs(v); function d(n){ return String(n).replace('.', ','); } if(v>=1e9)return'Rp'+d((v/1e9).toFixed(1))+'M'; if(v>=1e6)return'Rp'+d((v/1e6).toFixed(1))+'jt'; if(v>=1e3)return'Rp'+(v/1e3).toFixed(0)+'rb'; return'Rp'+Math.round(v); }
+function rp(v){ v=Math.round(Number(v)||0); return 'Rp ' + new Intl.NumberFormat('id-ID').format(v); }
+function shortRp(v){ v=Math.abs(v); function d(n){ return String(n).replace('.', ','); } if(v>=1e9)return'Rp'+d((v/1e9).toFixed(1))+'M'; if(v>=1e6)return'Rp'+d((v/1e6).toFixed(1))+'jt'; if(v>=1e3)return'Rp'+(v/1e3).toFixed(0)+'rb'; return'Rp'+Math.round(v); }
 function num(x){ if(x===null||x==='')return 0; if(typeof x==='number')return x; var s=String(x).replace(/Rp|\s|\./g,'').replace(',','').trim(); var n=parseFloat(s); return isNaN(n)?0:n; }
 function parseDate(s){ if(!s)return null; s=String(s).trim(); if(/^\d+$/.test(s)||/^\d+\.\d+$/.test(s)){ var d=new Date(1899,11,30); d.setDate(d.getDate()+parseInt(parseFloat(s))); return d; } var p=s.split(' '); if(p.length===3){ var m=bm[p[1]]; if(m)return new Date(parseInt(p[2]),m-1,parseInt(p[0]),12); } var md=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if(md)return new Date(parseInt(md[3]),parseInt(md[2])-1,parseInt(md[1]),12); var mi=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(mi){ var yy=parseInt(mi[1]),mo=parseInt(mi[2]),da=parseInt(mi[3]); var d3=new Date(yy,mo-1,da,12); return (!isNaN(d3.getTime())&&d3.getFullYear()===yy&&d3.getMonth()===mo-1&&d3.getDate()===da)?d3:null; } return null; }
 function dateDisplay(s){ var d=parseDate(s); if(!d)return String(s); return d.getDate()+' '+bn[d.getMonth()+1].substr(0,3)+' '+d.getFullYear(); }
@@ -5328,65 +5305,6 @@ function renderTrxAll(){
 }
 
 /* ===== PENGATURAN ===== */
-function setTema(nama){
-  try { localStorage.setItem('finTema', nama); } catch(e){}
-  applyTema(nama);
-}
-
-function applyTema(nama){
-  nama = nama || 'lime';
-  document.body.setAttribute('data-tema', nama);
-  var box = document.getElementById('setTema');
-  if(box){
-    Array.prototype.forEach.call(box.querySelectorAll('button[data-tema]'), function(b){
-      b.classList.toggle('aktif', b.getAttribute('data-tema') === nama);
-    });
-  }
-}
-
-function applyPreferences(){
-  var tema = 'lime', format = 'ringkas', privacy = false;
-  try { tema = localStorage.getItem('finTema') || 'lime'; } catch(e){}
-  try { format = localStorage.getItem('finFormatAngka') || 'ringkas'; } catch(e){}
-  try { privacy = localStorage.getItem('finPrivasi') === '1'; } catch(e){}
-  FORMAT_MODE = format === 'penuh' ? 'penuh' : 'ringkas';
-  PRIVACY_MODE = !!privacy;
-  applyTema(tema);
-  var fbox = document.getElementById('setFormat');
-  if(fbox){
-    Array.prototype.forEach.call(fbox.querySelectorAll('button[data-format]'), function(b){
-      b.classList.toggle('aktif', b.getAttribute('data-format') === FORMAT_MODE);
-    });
-  }
-  var btn = document.getElementById('btnPrivacy');
-  if(btn){
-    btn.textContent = PRIVACY_MODE ? 'Tampilkan saldo' : 'Sembunyikan saldo';
-    btn.setAttribute('aria-pressed', PRIVACY_MODE ? 'true' : 'false');
-    btn.classList.toggle('privacy-on', PRIVACY_MODE);
-  }
-}
-
-function refreshMoneyViews(){
-  try { applyFilter(); } catch(e){}
-  try { renderSavingPlan(); } catch(e){}
-  try { renderTabungan(); } catch(e){}
-  try { if(currentScreen === 'target') showTargetTab('tabungan'); } catch(e){}
-}
-
-function setFormatMode(mode){
-  FORMAT_MODE = mode === 'penuh' ? 'penuh' : 'ringkas';
-  try { localStorage.setItem('finFormatAngka', FORMAT_MODE); } catch(e){}
-  applyPreferences();
-  refreshMoneyViews();
-}
-
-function togglePrivacy(){
-  PRIVACY_MODE = !PRIVACY_MODE;
-  try { localStorage.setItem('finPrivasi', PRIVACY_MODE ? '1' : '0'); } catch(e){}
-  applyPreferences();
-  refreshMoneyViews();
-}
-
 function renderSettingsSummary(){
   var akunAktif = (akunData || []).filter(function(a){ return a.aktif; });
   var katAktif = (kategoriData || []).filter(function(k){ return k.aktif; });
@@ -6030,6 +5948,7 @@ function manageRencanaDelete(row){
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.1.6</strong><br>Bagian Tampilan di Pengaturan dihapus. Tema memakai Hijau, format angka ringkas, dan saldo selalu ditampilkan.</p>'
     + '<p><strong>Changelog v1.1.5</strong><br>Dashboard selalu memilih endpoint resmi terbaru dari <code>endpoint.txt</code>; URL deployment lama di localStorage tidak dipakai lebih dulu.</p>'
     + '<p><strong>Changelog v1.1.4</strong><br>Pembayaran kewajiban dari kas dan pelunasan non-kas dari pendapatan usaha dipisahkan, sehingga laporan bulanan tidak mencampur keduanya.</p>'
     + '<p><strong>Changelog v1.1.3</strong><br>Laporan pengeluaran memisahkan konsumsi dan pembayaran kewajiban; total kategori sama dengan total penggunaan dana. Ditambah halaman rincian pemasukan, pengeluaran, arus kas, dan kategori.</p>'
@@ -6075,7 +5994,6 @@ document.addEventListener('DOMContentLoaded', function(){
   if(trxSearch){
     trxSearch.addEventListener('input', function(){ renderTrxAll(); });
   }
-  applyPreferences();
   setRefreshInfo();
   var h = (location.hash || '').replace('#/','');
   showScreen(h || 'beranda', true);
