@@ -2641,10 +2641,10 @@ function parseKategori(rows) {
 var REMINDER_PREFIX = 'P1R|';
 function reminderNote(day, akun, kategori, lastPaid){
   function enc(v){ try{ return encodeURIComponent(String(v || '')); }catch(e){ return ''; } }
-  return REMINDER_PREFIX + 'd=' + (Number(day)||1)
+  return REMINDER_PREFIX + 'm=' + enc(lastPaid)
+    + '|d=' + (Number(day)||1)
     + '|a=' + enc(akun)
-    + '|k=' + enc(kategori)
-    + '|m=' + enc(lastPaid);
+    + '|k=' + enc(kategori);
 }
 function parseReminderNote(note){
   var out = {day:1, akun:'', kategori:'', lastPaid:''};
