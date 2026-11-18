@@ -165,6 +165,38 @@ h4 { margin: 0; font-size: 15px; font-weight: 800; }
   background: var(--positive);
   box-shadow: 0 0 0 3px rgba(14, 122, 79, .12);
 }
+.bell-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+}
+.bell-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.bell-btn.has-alert { border-color: #efd8a8; background: var(--warning-soft); color: var(--warning); }
+.bell-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--negative);
+  color: #fff;
+  font-size: 8.5px;
+  font-weight: 800;
+  line-height: 13px;
+  text-align: center;
+}
 .month-row {
   display: flex;
   align-items: center;
@@ -814,7 +846,6 @@ td.num { font-weight: 800; }
 .settings-card h3 { margin-bottom: 5px; }
 .settings-card .sub { margin-bottom: 10px; font-size: 10.5px; }
 .setrow { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
-.pin-change-btn { width: 100%; margin-top: 9px; }
 #pinChangeMsg { min-height: 16px; margin-top: 8px; margin-bottom: 0; }
 .settings-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--warning-soft); color: var(--warning); font-size: 10.5px; line-height: 1.5; }
 .settings-list { display: grid; gap: 7px; margin-top: 10px; }
@@ -830,6 +861,27 @@ td.num { font-weight: 800; }
 .settings-export select { min-height: 40px; }
 .settings-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
 .settings-actions .secondary-btn { flex: 1 1 auto; }
+.screen-back { display: inline-flex; align-items: center; gap: 5px; margin: 0 0 11px; padding: 0; border: 0; background: transparent; color: var(--primary); font: 800 11px var(--font); cursor: pointer; }
+#screen-ubah-pin .btnSave { --form-accent: var(--primary); --form-pill: 999px; margin-top: 10px; }
+#screen-ubah-pin .settings-card { --form-muted: var(--muted); --form-text: var(--text); --form-line: var(--line); --form-field: var(--surface-2); --form-accent: var(--primary); --form-pill: 999px; }
+.notif-list { display: grid; gap: 8px; }
+.notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px; border: 1px solid var(--form-line); border-radius: 14px; background: var(--form-field); }
+.notif-item.due { border-color: #f0c9c9; background: #fff8f8; }
+.notif-item.soon { border-color: #efdfb9; background: #fffaf0; }
+.notif-main { flex: 1; min-width: 0; }
+.notif-main strong { display: block; font-size: 12px; font-weight: 800; }
+.notif-main span { display: block; margin-top: 2px; color: var(--form-muted); font-size: 9.5px; line-height: 1.45; }
+.notif-side { flex: none; max-width: 118px; text-align: right; }
+.notif-side strong { display: block; color: var(--form-text); font-size: 11px; font-weight: 800; }
+.notif-side span { display: block; margin-top: 2px; color: var(--form-muted); font-size: 9px; font-weight: 700; }
+.notif-side .due { color: var(--form-expense); }
+.notif-side .soon { color: var(--form-debt); }
+.notif-side .done { color: var(--form-accent); }
+.notif-actions { display: flex; gap: 6px; margin-top: 7px; }
+.notif-actions button { padding: 5px 8px; border: 1px solid var(--form-line); border-radius: 8px; background: #fff; color: var(--form-accent); font: 800 9.5px var(--font); cursor: pointer; }
+.notif-pin-box { padding: 10px 11px; border: 1px solid var(--form-line); border-radius: 13px; background: var(--form-bg); }
+.notif-pin-box .fin-label { margin-top: 0; }
+.notif-empty { padding: 20px 12px; border: 1px dashed var(--form-line); border-radius: 13px; color: var(--form-muted); text-align: center; font-size: 10.5px; line-height: 1.55; }
 .manage-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 8px; }
 .manage-toolbar .sub { margin: 0; }
 .manage-list { display: grid; gap: 6px; margin: 8px 0 12px; }
@@ -976,13 +1028,13 @@ td.num { font-weight: 800; }
   transition: transform .15s ease;
 }
 .fab:active { transform: scale(.94); }
-body.fin-auth-locked .fab, body.fab-hidden .fab, body[data-screen="rincian"] .fab { display: none; }
+body.fin-auth-locked .fab, body.fab-hidden .fab, body[data-screen="rincian"] .fab, body[data-screen="pengaturan"] .fab, body[data-screen="data-backup"] .fab, body[data-screen="ubah-pin"] .fab { display: none; }
 @media (max-width: 360px) {
   .refresh-badge { display: none; }
 }
 
 /* ===== form / modal ===== */
-#addModal, #angModal, #akunModal, #pinModal, #manageModal {
+#addModal, #angModal, #akunModal, #notifModal, #manageModal {
   --form-bg: #f5f8f4;
   --form-sheet: #ffffff;
   --form-field: #f1f6ef;
@@ -1000,7 +1052,7 @@ body.fin-auth-locked .fab, body.fab-hidden .fab, body[data-screen="rincian"] .fa
   --form-pill: 999px;
   --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
-#addModal, #angModal, #pinModal, #manageModal {
+#addModal, #angModal, #notifModal, #manageModal {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -1012,7 +1064,7 @@ body.fin-auth-locked .fab, body.fab-hidden .fab, body[data-screen="rincian"] .fa
   -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
 }
-#addModal.open, #angModal.open, #pinModal.open, #manageModal.open { display: flex; }
+#addModal.open, #angModal.open, #notifModal.open, #manageModal.open { display: flex; }
 .fin-sheet {
   position: relative;
   display: flex;
@@ -1479,6 +1531,10 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         <h1>Keuangan Bukhori</h1>
       </div>
       <div class="header-actions">
+        <button class="bell-btn" id="notifBell" type="button" onclick="openNotifPanel()" aria-label="Buka pengingat pembayaran" aria-haspopup="dialog" title="Pengingat pembayaran">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg>
+          <span class="bell-count" id="notifCount" hidden>0</span>
+        </button>
         <span class="refresh-badge" id="refreshBadge" title="Status data">Memuat…</span>
       </div>
     </div>
@@ -1778,11 +1834,49 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
             <span class="settings-item-copy"><strong>Rencana saving &amp; investasi</strong><span>Baseline dan alokasi bulanan</span></span>
             <span class="settings-item-value" id="settingsRencanaCount">—</span><span class="settings-item-chev">›</span>
           </button>
+          <button type="button" class="settings-item" onclick="openManager('pengingat')">
+            <span class="settings-item-icon">◷</span>
+            <span class="settings-item-copy"><strong>Pengingat pembayaran</strong><span>Pembayaran rutin tiap tanggal</span></span>
+            <span class="settings-item-value" id="settingsPengingatCount">—</span><span class="settings-item-chev">›</span>
+          </button>
         </div>
       </div>
 
       <div class="card settings-card">
-        <h3>Data &amp; backup</h3>
+        <h3>Data &amp; keamanan</h3>
+        <div class="sub">Data lengkap dan PIN dipisah ke halaman khusus.</div>
+        <div class="settings-list">
+          <button type="button" class="settings-item" onclick="openDataBackupPage()">
+            <span class="settings-item-icon">⇩</span>
+            <span class="settings-item-copy"><strong>Data &amp; backup</strong><span>Ekspor CSV/JSON dan muat ulang data</span></span>
+            <span class="settings-item-chev">›</span>
+          </button>
+          <button type="button" class="settings-item" onclick="openPinPage()">
+            <span class="settings-item-icon">⌁</span>
+            <span class="settings-item-copy"><strong>Ubah PIN</strong><span>PIN 6 angka untuk melindungi data</span></span>
+            <span class="settings-item-chev">›</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card settings-card">
+        <h3>Tentang</h3>
+        <div class="sub" id="appVersion">—</div>
+        <div class="setrow">
+          <button type="button" class="secondary-btn" onclick="openManager('help')">Bantuan &amp; changelog</button>
+        </div>
+        <div class="sub" style="margin:9px 0 0">Sumber data: Google Sheets pribadi. Tanpa data dummy.</div>
+      </div>
+    </section>
+
+    <!-- ================= DATA & BACKUP ================= -->
+    <section class="screen" data-screen="data-backup" id="screen-data-backup" hidden>
+      <div class="screen-head">
+        <div><div class="eyebrow">Teknis</div><h2>Data &amp; backup</h2></div>
+      </div>
+      <button type="button" class="screen-back" onclick="showScreen('pengaturan')">← Kembali ke Pengaturan</button>
+      <div class="card settings-card">
+        <h3>Ekspor data</h3>
         <div class="sub">Ekspor data aktual dari sesi ini. Masukkan PIN; file tidak memuat PIN atau token.</div>
         <div class="settings-export">
           <select class="fin-input" id="exportTable" aria-label="Pilih tabel untuk diekspor">
@@ -1793,6 +1887,7 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
             <option value="akun">Akun</option>
             <option value="kategori">Kategori</option>
             <option value="rencana">Rencana</option>
+            <option value="pengingat">Pengingat</option>
           </select>
           <button type="button" class="secondary-btn" onclick="exportSelectedCsv()">Unduh CSV</button>
         </div>
@@ -1805,20 +1900,25 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
         </div>
         <div class="sub" id="lastSyncInfo" style="margin-top:9px">Sinkron terakhir: —</div>
       </div>
+    </section>
 
+    <!-- ================= UBAH PIN ================= -->
+    <section class="screen" data-screen="ubah-pin" id="screen-ubah-pin" hidden>
+      <div class="screen-head">
+        <div><div class="eyebrow">Keamanan</div><h2>Ubah PIN</h2></div>
+      </div>
+      <button type="button" class="screen-back" onclick="showScreen('pengaturan')">← Kembali ke Pengaturan</button>
       <div class="card settings-card">
         <h3>PIN dashboard</h3>
         <div class="sub">PIN 6 angka melindungi data. Setelah PIN diubah, semua sesi lama akan logout.</div>
-        <button type="button" class="secondary-btn pin-change-btn" onclick="openPinModal()">Ubah PIN</button>
-      </div>
-
-      <div class="card settings-card">
-        <h3>Tentang</h3>
-        <div class="sub" id="appVersion">—</div>
-        <div class="setrow">
-          <button type="button" class="secondary-btn" onclick="openManager('help')">Bantuan &amp; changelog</button>
-        </div>
-        <div class="sub" style="margin:9px 0 0">Sumber data: Google Sheets pribadi. Tanpa data dummy.</div>
+        <div class="fin-label">PIN sekarang</div>
+        <input aria-label="PIN sekarang" autocomplete="current-password" class="fin-input" id="pinCurrent" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+        <div class="fin-label">PIN baru</div>
+        <input aria-label="PIN baru" autocomplete="new-password" class="fin-input" id="pinNew" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+        <div class="fin-label">Ulangi PIN baru</div>
+        <input aria-label="Ulangi PIN baru" autocomplete="new-password" class="fin-input" id="pinNew2" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+        <div class="sub" id="pinChangeMsg" role="status" aria-live="polite"></div>
+        <button class="btnSave" id="pinChangeBtn" onclick="finChangePin()">Simpan PIN baru</button>
       </div>
     </section>
   </main>
@@ -1980,32 +2080,32 @@ body[data-tema="coral"] .hero-card { background: linear-gradient(135deg, #9b3048
   </div>
 </div>
 
-<!-- ================= MODAL UBAH PIN ================= -->
-<div class="modal" id="pinModal" onclick="if(event.target===this)closePinModal()">
-  <div aria-labelledby="pinModalTitle" aria-modal="true" class="fin-sheet" role="dialog">
+<!-- ================= MODAL PENGINGAT ================= -->
+<div class="modal" id="notifModal" onclick="if(event.target===this)closeNotifPanel()">
+  <div aria-labelledby="notifTitle" aria-modal="true" class="fin-sheet" role="dialog">
     <div class="fin-handle"></div>
     <div class="fin-head">
-      <h3 id="pinModalTitle">Ubah PIN</h3>
-      <button aria-label="Tutup" class="fin-icon-btn" type="button" onclick="closePinModal()">✕</button>
+      <h3 id="notifTitle">Pengingat pembayaran</h3>
+      <button aria-label="Tutup" class="fin-icon-btn" type="button" onclick="closeNotifPanel()">✕</button>
     </div>
     <div class="fin-body">
-      <div class="fin-label">PIN sekarang</div>
-      <input aria-label="PIN sekarang" autocomplete="current-password" class="fin-input" id="pinCurrent" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-      <div class="fin-label">PIN baru</div>
-      <input aria-label="PIN baru" autocomplete="new-password" class="fin-input" id="pinNew" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-      <div class="fin-label">Ulangi PIN baru</div>
-      <input aria-label="Ulangi PIN baru" autocomplete="new-password" class="fin-input" id="pinNew2" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
-      <div class="sub" id="pinChangeMsg" role="status" aria-live="polite">—</div>
-      <button class="btnSave" id="pinChangeBtn" onclick="finChangePin()">Simpan PIN baru</button>
+      <div class="sub" id="notifSub">Pembayaran rutin yang perlu dicek.</div>
+      <div class="notif-list" id="notifList"></div>
+      <div class="notif-pin-box" id="notifPinBox">
+        <div class="fin-label">PIN untuk tandai lunas</div>
+        <input aria-label="PIN untuk tandai lunas" autocomplete="off" class="fin-input" id="notifPin" inputmode="numeric" maxlength="6" placeholder="6 angka" type="password"/>
+      </div>
+      <div class="manage-msg" id="notifMsg"></div>
+      <button class="secondary-btn" type="button" onclick="openReminderManager()">Atur pengingat</button>
     </div>
   </div>
 </div>
 
 <script>
 const FIN_SESSION_KEY = 'fin_session_v2';
-const APP_VERSION = 'v1.1.6';
+const APP_VERSION = 'v1.2.0';
 let allTrx = [], opnameData = [], anggaranT1 = [], tabungData = [];
-let akunData = [], kategoriData = [], rencanaData = [];
+let akunData = [], kategoriData = [], rencanaData = [], reminderData = [];
 let masterReady = false;
 let charts = {};
 const bm = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'Mei':5,'May':5,'Jun':6,'Jul':7,'Agu':8,'Aug':8,'Sep':9,'Okt':10,'Oct':10,'Nov':11,'Des':12,'Dec':12};
@@ -2058,6 +2158,7 @@ function finShowAuthGate(message){
   var content = document.getElementById('dashboardContent');
   if(content) content.style.display = 'none';
   if(typeof closeManager === 'function') closeManager();
+  if(typeof closeNotifPanel === 'function') closeNotifPanel();
   if(typeof finToggleSetup === 'function') finToggleSetup(false);
   if(message) finAuthMessage(message, false);
   var pin = document.getElementById('authPin');
@@ -2098,29 +2199,10 @@ function finLockDashboard(){
     }catch(e){}
   }
   finClearSession();
-  allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; akunData = []; kategoriData = []; rencanaData = []; masterReady = false; window.__lastFiltered = [];
+  allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; akunData = []; kategoriData = []; rencanaData = []; reminderData = []; masterReady = false; window.__lastFiltered = [];
   var content = document.getElementById('dashboardContent');
   if(content) content.style.display = 'none';
   finShowAuthGate('Dashboard dikunci. Masukkan PIN untuk membuka lagi.');
-}
-function openPinModal(){
-  var currentEl = document.getElementById('pinCurrent');
-  var newEl = document.getElementById('pinNew');
-  var new2El = document.getElementById('pinNew2');
-  var msg = document.getElementById('pinChangeMsg');
-  if(currentEl) currentEl.value = '';
-  if(newEl) newEl.value = '';
-  if(new2El) new2El.value = '';
-  if(msg){ msg.textContent = '—'; msg.style.color = ''; }
-  var m = document.getElementById('pinModal');
-  if(m) m.classList.add('open');
-  document.body.classList.add('fab-hidden');
-  setTimeout(function(){ try{ if(currentEl) currentEl.focus(); }catch(e){} }, 80);
-}
-function closePinModal(){
-  var m = document.getElementById('pinModal');
-  if(m) m.classList.remove('open');
-  document.body.classList.remove('fab-hidden');
 }
 async function finChangePin(){
   var currentEl = document.getElementById('pinCurrent');
@@ -2165,8 +2247,8 @@ async function finChangePin(){
     if(currentEl) currentEl.value = '';
     if(newEl) newEl.value = '';
     if(new2El) new2El.value = '';
-    allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; akunData = []; kategoriData = []; rencanaData = []; masterReady = false; window.__lastFiltered = [];
-    closePinModal();
+    allTrx = []; opnameData = []; anggaranT1 = []; tabungData = []; akunData = []; kategoriData = []; rencanaData = []; reminderData = []; masterReady = false; window.__lastFiltered = [];
+    showScreen('beranda');
     finShowAuthGate('');
     finAuthMessage('PIN berhasil diubah. Login dengan PIN baru.', true);
   }catch(e){
@@ -2357,6 +2439,7 @@ async function loadAll() {
     renderTabungan();
     applyFilter();
     renderSettingsSummary();
+    renderReminderBell();
     if(loading) loading.style.display = 'none';
     if(content) content.style.display = 'block';
     if(badge){
@@ -2555,14 +2638,49 @@ function parseKategori(rows) {
   }
 }
 
+var REMINDER_PREFIX = 'P1R|';
+function reminderNote(day, akun, kategori, lastPaid){
+  function enc(v){ try{ return encodeURIComponent(String(v || '')); }catch(e){ return ''; } }
+  return REMINDER_PREFIX + 'd=' + (Number(day)||1)
+    + '|a=' + enc(akun)
+    + '|k=' + enc(kategori)
+    + '|m=' + enc(lastPaid);
+}
+function parseReminderNote(note){
+  var out = {day:1, akun:'', kategori:'', lastPaid:''};
+  String(note || '').split('|').slice(1).forEach(function(part){
+    var idx = part.indexOf('=');
+    if(idx < 0) return;
+    var key = part.slice(0, idx);
+    var val = part.slice(idx + 1);
+    try { val = decodeURIComponent(val); } catch(e){}
+    if(key === 'd') out.day = Math.max(1, Math.min(31, Number(val)||1));
+    else if(key === 'a') out.akun = val;
+    else if(key === 'k') out.kategori = val;
+    else if(key === 'm') out.lastPaid = val;
+  });
+  return out;
+}
+
 function parseRencana(rows) {
   rencanaData = [];
+  reminderData = [];
   for (var i=1; i<rows.length; i++) {
     var r=rows[i] || []; if(!r.length) continue;
     var label=String(r[1]||'').trim(); if(!label) continue;
+    var catatan=String(r[3]||'').trim();
+    if(catatan.indexOf(REMINDER_PREFIX) === 0){
+      var meta = parseReminderNote(catatan);
+      reminderData.push({
+        row:i+1, label:label, nominal:num(r[2]),
+        day:meta.day, akun:meta.akun, kategori:meta.kategori, lastPaid:meta.lastPaid,
+        urutan:num(r[5])||99, aktif:finBool(r[6], true)
+      });
+      continue;
+    }
     rencanaData.push({
       jenis:String(r[0]||'Saving').trim()||'Saving', label:label,
-      nominal:num(r[2]), catatan:String(r[3]||'').trim(),
+      nominal:num(r[2]), catatan:catatan,
       warna:String(r[4]||'#4dabf7').trim()||'#4dabf7',
       urutan:num(r[5])||99, aktif:finBool(r[6], true), row:i+1
     });
@@ -5157,7 +5275,7 @@ function finPackChip(el){
 }
 
 /* ===== SHELL APLIKASI: pindah layar ===== */
-var SCREENS = ['beranda','transaksi','laporan','rincian','target','akun','pengaturan'];
+var SCREENS = ['beranda','transaksi','laporan','rincian','target','akun','pengaturan','data-backup','ubah-pin'];
 var currentScreen = 'beranda';
 
 function resizeCharts(){
@@ -5186,7 +5304,7 @@ function showScreen(name, noHash, tab){
     else el.setAttribute('hidden','');
   });
   var nav = document.getElementById('bottomnav');
-  var navName = name === 'rincian' ? 'laporan' : name;
+  var navName = name === 'rincian' ? 'laporan' : ((name === 'data-backup' || name === 'ubah-pin') ? 'pengaturan' : name);
   if(nav){
     Array.prototype.forEach.call(nav.querySelectorAll('button[data-nav]'), function(b){
       var active = b.getAttribute('data-nav') === navName;
@@ -5313,6 +5431,8 @@ function renderSettingsSummary(){
   finSet('settingsKategoriCount', masterReady ? katAktif.length + ' aktif' : '—');
   finSet('settingsTargetCount', tabungData.length ? tabungData.length + ' target' : '—');
   finSet('settingsRencanaCount', masterReady ? rencanaAktif.length + ' item' : '—');
+  var reminderAktif = (reminderData || []).filter(function(r){ return r.aktif; });
+  finSet('settingsPengingatCount', reminderAktif.length ? reminderAktif.length + ' aktif' : '—');
   var notice = document.getElementById('masterNotice');
   if(notice) notice.hidden = !!masterReady;
 }
@@ -5327,6 +5447,171 @@ function setRefreshInfo(){
       : 'Sinkron terakhir: —';
   }
   renderSettingsSummary();
+}
+
+function openDataBackupPage(){
+  showScreen('data-backup');
+}
+
+function openPinPage(){
+  var currentEl = document.getElementById('pinCurrent');
+  var newEl = document.getElementById('pinNew');
+  var new2El = document.getElementById('pinNew2');
+  var msg = document.getElementById('pinChangeMsg');
+  if(currentEl) currentEl.value = '';
+  if(newEl) newEl.value = '';
+  if(new2El) new2El.value = '';
+  if(msg){ msg.textContent = ''; msg.style.color = ''; }
+  showScreen('ubah-pin');
+  setTimeout(function(){ try{ if(currentEl) currentEl.focus(); }catch(e){} }, 80);
+}
+
+/* ===== PENGINGAT PEMBAYARAN ===== */
+function reminderMonthKey(d){
+  var m = String(d.getMonth() + 1);
+  return d.getFullYear() + '-' + (m.length < 2 ? '0' + m : m);
+}
+function reminderDueDate(r, year, month){
+  var last = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(Math.max(1, Number(r.day) || 1), last), 12);
+}
+function reminderDateText(d){
+  if(!(d instanceof Date) || isNaN(d.getTime())) return '—';
+  return d.getDate() + ' ' + bn[d.getMonth() + 1].substr(0, 3) + ' ' + d.getFullYear();
+}
+function reminderStatus(r){
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth();
+  var monthKey = reminderMonthKey(now);
+  var due = reminderDueDate(r, y, m);
+  var today = new Date(y, m, now.getDate(), 12);
+  var paid = String(r.lastPaid || '') === monthKey;
+  var diff = Math.round((due.getTime() - today.getTime()) / 86400000);
+  var next = paid ? reminderDueDate(r, m === 11 ? y + 1 : y, m === 11 ? 0 : m + 1) : due;
+  return {paid:paid, due:due, diff:diff, monthKey:monthKey, next:next};
+}
+function reminderStatusInfo(r){
+  var s = reminderStatus(r);
+  if(s.paid) return {paid:true, cls:'done', label:'Lunas bulan ini', sub:'Berikutnya ' + reminderDateText(s.next)};
+  if(s.diff < 0) return {paid:false, cls:'due', label:'Terlambat ' + Math.abs(s.diff) + ' hari', sub:'Jatuh tempo ' + reminderDateText(s.due)};
+  if(s.diff === 0) return {paid:false, cls:'due', label:'Jatuh tempo hari ini', sub:reminderDateText(s.due)};
+  if(s.diff <= 7) return {paid:false, cls:'soon', label:s.diff + ' hari lagi', sub:'Jatuh tempo ' + reminderDateText(s.due)};
+  return {paid:false, cls:'', label:'Tanggal ' + r.day, sub:'Jatuh tempo ' + reminderDateText(s.due)};
+}
+function renderReminderBell(){
+  var btn = document.getElementById('notifBell');
+  var badge = document.getElementById('notifCount');
+  var active = (reminderData || []).filter(function(r){ return r.aktif; });
+  var alerts = active.filter(function(r){
+    var s = reminderStatus(r);
+    return !s.paid && s.diff <= 7;
+  }).length;
+  if(badge){
+    badge.hidden = alerts === 0;
+    badge.textContent = alerts > 9 ? '9+' : String(alerts);
+  }
+  if(btn){
+    btn.classList.toggle('has-alert', alerts > 0);
+    btn.title = alerts > 0 ? alerts + ' pengingat perlu dicek' : 'Pengingat pembayaran';
+    btn.setAttribute('aria-label', alerts > 0 ? alerts + ' pengingat perlu dicek' : 'Buka pengingat pembayaran');
+  }
+}
+function openNotifPanel(){
+  var msg = document.getElementById('notifMsg');
+  if(msg){ msg.textContent = ''; msg.className = 'manage-msg'; }
+  var pin = document.getElementById('notifPin');
+  if(pin) pin.value = '';
+  renderNotifPanel();
+  var m = document.getElementById('notifModal');
+  if(m) m.classList.add('open');
+  document.body.classList.add('fab-hidden');
+}
+function closeNotifPanel(){
+  var m = document.getElementById('notifModal');
+  if(m) m.classList.remove('open');
+  document.body.classList.remove('fab-hidden');
+}
+function openReminderManager(){
+  closeNotifPanel();
+  openManager('pengingat');
+}
+function renderNotifPanel(){
+  var list = document.getElementById('notifList');
+  var sub = document.getElementById('notifSub');
+  var pinBox = document.getElementById('notifPinBox');
+  if(!list) return;
+  var active = (reminderData || []).filter(function(r){ return r.aktif; }).sort(function(a, b){
+    var sa = reminderStatus(a), sb = reminderStatus(b);
+    if(sa.paid !== sb.paid) return sa.paid ? 1 : -1;
+    return (sa.diff - sb.diff) || (a.day - b.day);
+  });
+  var alerts = active.filter(function(r){
+    var s = reminderStatus(r);
+    return !s.paid && s.diff <= 7;
+  }).length;
+  if(sub) sub.textContent = active.length
+    ? active.length + ' pengingat aktif · ' + (alerts ? alerts + ' perlu dicek' : 'tidak ada yang mendesak')
+    : 'Belum ada pengingat pembayaran rutin.';
+  if(!active.length){
+    list.innerHTML = '<div class="notif-empty">Tambahkan pengingat seperti listrik, air, atau langganan agar muncul di lonceng ini.</div>';
+    if(pinBox) pinBox.hidden = true;
+    return;
+  }
+  var html = '';
+  active.forEach(function(r){
+    var info = reminderStatusInfo(r);
+    var detail = 'Tanggal ' + r.day;
+    if(r.nominal) detail += ' · ' + rp(r.nominal);
+    if(r.akun) detail += ' · ' + r.akun;
+    if(r.kategori) detail += ' · ' + r.kategori;
+    html += '<div class="notif-item ' + info.cls + '">'
+      + '<div class="notif-main"><strong>' + escAttr(r.label) + '</strong><span>' + escAttr(detail) + '</span>'
+      + (info.paid ? '' : '<div class="notif-actions"><button type="button" onclick="markReminderPaid(' + r.row + ')">Tandai lunas</button></div>')
+      + '</div>'
+      + '<div class="notif-side"><strong>' + (r.nominal ? shortRp(r.nominal) : '—') + '</strong><span class="' + info.cls + '">' + escAttr(info.label) + '</span><span>' + escAttr(info.sub) + '</span></div>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+  if(pinBox) pinBox.hidden = !active.some(function(r){ return !reminderStatus(r).paid; });
+}
+function markReminderPaid(row){
+  var r = null;
+  (reminderData || []).some(function(x){ if(Number(x.row) === Number(row)){ r = x; return true; } return false; });
+  if(!r) return;
+  var pinEl = document.getElementById('notifPin');
+  var pin = pinEl ? String(pinEl.value || '').replace(/\D/g,'').slice(0,6) : '';
+  var msg = document.getElementById('notifMsg');
+  function setMsg(text, ok){
+    if(!msg) return;
+    msg.textContent = text || '';
+    msg.className = 'manage-msg' + (ok ? ' ok' : '');
+  }
+  if(!/^\d{6}$/.test(pin)){
+    setMsg('Masukkan PIN 6 angka untuk menandai lunas.', false);
+    if(pinEl) pinEl.focus();
+    return;
+  }
+  var note = reminderNote(r.day, r.akun, r.kategori, reminderMonthKey(new Date()));
+  setMsg('Menyimpan…', true);
+  finPost('/rencana/save', {
+    jenis:'Saving', row:r.row, label:r.label, nominal:r.nominal || 0,
+    catatan:note, warna:'#0e7a4f', urutan:r.urutan || 99, aktif:r.aktif, pin:pin
+  }).then(function(j){
+    if(!j || !j.ok){ setMsg((j && j.error) ? j.error : 'Gagal menandai lunas.', false); return; }
+    r.lastPaid = reminderMonthKey(new Date());
+    var raw = window.__rawData;
+    if(raw && Array.isArray(raw.rencana) && raw.rencana[r.row - 1]){
+      raw.rencana[r.row - 1][3] = note;
+      raw.rencana[r.row - 1][2] = r.nominal || 0;
+      raw.rencana[r.row - 1][6] = r.aktif;
+    }
+    if(pinEl) pinEl.value = '';
+    renderReminderBell();
+    renderNotifPanel();
+    setMsg('Ditandai lunas bulan ini ✅', true);
+  }).catch(function(e){
+    setMsg('Gagal menyambung: ' + ((e && e.message) ? e.message : 'jaringan'), false);
+  });
 }
 
 function exportDateStamp(){
@@ -5372,6 +5657,11 @@ function exportFallbackRows(key){
     var rrows = [['Jenis','Label','Nominal','Catatan','Warna','Urutan','Aktif']];
     (rencanaData || []).forEach(function(r){ rrows.push([r.jenis, r.label, r.nominal, r.catatan, r.warna, r.urutan, r.aktif]); });
     return rrows;
+  }
+  if(key === 'pengingat'){
+    var prows = [['Nama','Tanggal','Nominal','Akun','Kategori','Aktif','Terakhir Dibayar']];
+    (reminderData || []).forEach(function(r){ prows.push([r.label, r.day, r.nominal, r.akun, r.kategori, r.aktif, r.lastPaid]); });
+    return prows;
   }
   return [];
 }
@@ -5426,7 +5716,7 @@ function exportSelectedCsv(){
   var rows = exportTableRows(key);
   if(!rows || !rows.length){ alert('Belum ada data untuk diekspor.'); return; }
   exportWithPin(function(){
-    var labels = {trx:'transaksi',opname:'opname',anggaran:'anggaran',tabungan:'target-tabungan',akun:'akun',kategori:'kategori',rencana:'rencana'};
+    var labels = {trx:'transaksi',opname:'opname',anggaran:'anggaran',tabungan:'target-tabungan',akun:'akun',kategori:'kategori',rencana:'rencana',pengingat:'pengingat'};
     var csv = '\ufeff' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
     downloadText('keuangan-' + (labels[key] || key) + '-' + exportDateStamp() + '.csv', csv, 'text/csv;charset=utf-8');
   });
@@ -5438,8 +5728,9 @@ function exportJson(){
   ['trx','opname','anggaran','tabungan','akun','kategori','rencana'].forEach(function(k){
     if(Array.isArray(raw[k])) data[k] = raw[k];
   });
+  if(reminderData.length) data.pengingat = exportFallbackRows('pengingat').slice(1);
   if(!Object.keys(data).length){
-    data = {trx:exportFallbackRows('trx'),opname:exportFallbackRows('opname'),anggaran:exportFallbackRows('anggaran'),tabungan:exportFallbackRows('tabungan'),akun:exportFallbackRows('akun'),kategori:exportFallbackRows('kategori'),rencana:exportFallbackRows('rencana')};
+    data = {trx:exportFallbackRows('trx'),opname:exportFallbackRows('opname'),anggaran:exportFallbackRows('anggaran'),tabungan:exportFallbackRows('tabungan'),akun:exportFallbackRows('akun'),kategori:exportFallbackRows('kategori'),rencana:exportFallbackRows('rencana'),pengingat:exportFallbackRows('pengingat').slice(1)};
   }
   exportWithPin(function(){
     var payload = {app:'Keuangan Bukhori',version:APP_VERSION,exportedAt:new Date().toISOString(),data:data};
@@ -5560,7 +5851,7 @@ function openManager(kind){
   }
   manageKind = kind || 'help';
   manageEditRow = 0; manageAdd = false; manageBaselineMode = false;
-  var titles = {akun:'Akun & dompet',kategori:'Kategori',target:'Target tabungan',rencana:'Rencana saving & investasi',help:'Bantuan & changelog'};
+  var titles = {akun:'Akun & dompet',kategori:'Kategori',target:'Target tabungan',rencana:'Rencana saving & investasi',pengingat:'Pengingat pembayaran',help:'Bantuan & changelog'};
   var t = document.getElementById('manageTitle');
   if(t) t.textContent = titles[manageKind] || 'Kelola';
   var m = document.getElementById('manageModal');
@@ -5657,6 +5948,7 @@ function renderManager(){
   else if(manageKind === 'kategori') body.innerHTML = manageKategoriHtml();
   else if(manageKind === 'target') body.innerHTML = manageTargetHtml();
   else if(manageKind === 'rencana') body.innerHTML = manageRencanaHtml();
+  else if(manageKind === 'pengingat') body.innerHTML = managePengingatHtml();
   else body.innerHTML = manageHelpHtml();
   var pin = document.getElementById('managePin');
   if(pin) pin.value = '';
@@ -5945,9 +6237,85 @@ function manageRencanaDelete(row){
   managePost('/rencana/delete', {row:row, pin:pin}, 'rencana');
 }
 
+/* ---- pengingat pembayaran ---- */
+function findReminderRow(row){ for(var i=0;i<reminderData.length;i++){ if(reminderData[i].row === row) return reminderData[i]; } return null; }
+
+function managePengingatHtml(){
+  var rows = reminderData.slice().sort(function(a,b){
+    return (Number(a.day)||99) - (Number(b.day)||99) || a.label.localeCompare(b.label, 'id');
+  });
+  var html = managePinField();
+  html += manageToolbar(rows.filter(function(r){return r.aktif;}).length + ' pengingat aktif', 'Pengingat');
+  if(manageAdd || manageEditRow) html += managePengingatForm();
+  html += '<div class="manage-section-title">Daftar pengingat</div>';
+  if(!rows.length) html += '<div class="manage-empty">Belum ada pengingat. Tambahkan pembayaran rutin seperti listrik atau internet.</div>';
+  else {
+    html += '<div class="manage-list">';
+    rows.forEach(function(r){
+      var info = reminderStatusInfo(r);
+      html += '<div class="manage-item"><div class="manage-item-main"><strong>' + escAttr(r.label) + (r.aktif ? '' : ' · nonaktif') + '</strong>'
+        + '<span>Tanggal ' + r.day + (r.nominal ? ' · ' + rp(r.nominal) : '') + (r.akun ? ' · ' + escAttr(r.akun) : '') + (r.kategori ? ' · ' + escAttr(r.kategori) : '') + '</span>'
+        + '<span style="color:' + (info.paid ? 'var(--form-accent)' : (info.cls === 'due' ? 'var(--form-expense)' : 'var(--form-muted)')) + '">' + escAttr(info.label) + '</span></div>'
+        + '<div class="manage-item-actions"><button type="button" title="Ubah" onclick="managePengingatEdit(' + r.row + ')">Ubah</button>'
+        + '<button type="button" class="danger" title="Hapus" onclick="managePengingatDelete(' + r.row + ')">Hapus</button></div></div>';
+    });
+    html += '</div>';
+  }
+  return html;
+}
+
+function managePengingatForm(){
+  var r = manageEditRow ? findReminderRow(manageEditRow) : null;
+  var akunNames = getAkunMaster(true).map(function(a){ return a.nama; });
+  var katNames = (kategoriData || []).filter(function(k){ return k.aktif; }).sort(function(a,b){ return (Number(a.urutan)||99)-(Number(b.urutan)||99) || a.nama.localeCompare(b.nama,'id'); }).map(function(k){ return k.nama; });
+  var html = '<div class="manage-form">';
+  html += '<div class="fin-label">Nama pembayaran</div><input class="fin-input" id="mgPengingatNama" maxlength="80" autocomplete="off" value="' + escAttr(r ? r.label : '') + '" placeholder="Contoh: Listrik">';
+  html += '<div class="manage-grid"><div><div class="fin-label">Tanggal</div><input class="fin-input" id="mgPengingatTanggal" type="number" min="1" max="31" value="' + (r ? r.day : 1) + '"></div>'
+    + '<div><div class="fin-label">Nominal (Rp)</div><input class="fin-input" id="mgPengingatNominal" inputmode="numeric" value="' + (r ? Number(r.nominal)||0 : '') + '" placeholder="Opsional"></div></div>';
+  html += '<div class="fin-label">Akun pembayaran</div><select class="fin-input" id="mgPengingatAkun"><option value="">Tidak terkait akun</option>';
+  akunNames.forEach(function(n){ html += '<option value="' + escAttr(n) + '"' + (r && r.akun === n ? ' selected' : '') + '>' + escAttr(n) + '</option>'; });
+  html += '</select>';
+  html += '<div class="fin-label">Kategori</div><select class="fin-input" id="mgPengingatKategori"><option value="">Tidak terkait kategori</option>';
+  katNames.forEach(function(n){ html += '<option value="' + escAttr(n) + '"' + (r && r.kategori === n ? ' selected' : '') + '>' + escAttr(n) + '</option>'; });
+  html += '</select>';
+  html += '<div class="manage-checks"><label class="manage-check"><input type="checkbox" id="mgPengingatAktif"' + (!r || r.aktif ? ' checked' : '') + '> Aktif</label></div>';
+  html += '<div class="setrow"><button type="button" class="btnSave" onclick="managePengingatSave()">Simpan pengingat</button><button type="button" class="secondary-btn" onclick="manageBatal()">Batal</button></div>';
+  html += '</div>';
+  return html;
+}
+
+function managePengingatAdd(){ manageAdd = true; manageEditRow = 0; manageBaselineMode = false; renderManager(); }
+function managePengingatEdit(row){ manageAdd = false; manageEditRow = row; manageBaselineMode = false; renderManager(); }
+
+function managePengingatSave(){
+  var pin = managePinValue(); if(!pin) return;
+  var label = String((document.getElementById('mgPengingatNama')||{}).value || '').trim();
+  var day = Math.max(1, Math.min(31, parseInt((document.getElementById('mgPengingatTanggal')||{}).value, 10) || 1));
+  if(!label){ manageSetMsg('Nama pembayaran wajib diisi.', false); return; }
+  var old = manageEditRow ? findReminderRow(manageEditRow) : null;
+  var akun = String((document.getElementById('mgPengingatAkun')||{}).value || '');
+  var kategori = String((document.getElementById('mgPengingatKategori')||{}).value || '');
+  var nominal = Number(String((document.getElementById('mgPengingatNominal')||{}).value || '0').replace(/[^\d]/g,'')) || 0;
+  var aktif = !!(document.getElementById('mgPengingatAktif')||{}).checked;
+  var note = reminderNote(day, akun, kategori, old ? old.lastPaid : '');
+  managePost('/rencana/save', {
+    jenis:'Saving', row: manageEditRow || 0, label: label, nominal: nominal,
+    catatan: note, warna:'#0e7a4f', urutan: old ? old.urutan : 90,
+    aktif: aktif, pin: pin
+  }, 'pengingat');
+}
+
+function managePengingatDelete(row){
+  var r = findReminderRow(row);
+  if(!r || !confirm('Hapus pengingat "' + r.label + '"?')) return;
+  var pin = managePinValue(); if(!pin) return;
+  managePost('/rencana/delete', {row:row, pin:pin}, 'pengingat');
+}
+
 function manageHelpHtml(){
   return '<div style="padding:4px 2px 18px;font-size:11px;line-height:1.65;color:var(--form-muted)">'
     + '<div class="manage-baseline" style="margin-bottom:12px"><strong>Versi aplikasi</strong><span>' + APP_VERSION + '</span></div>'
+    + '<p><strong>Changelog v1.2.0</strong><br>Pengingat pembayaran rutin dengan lonceng notifikasi di Beranda. Halaman Data &amp; backup dan Ubah PIN dipisahkan dari Pengaturan agar tombol teknis tidak memenuhi halaman utama.</p>'
     + '<p><strong>Changelog v1.1.6</strong><br>Bagian Tampilan di Pengaturan dihapus. Tema memakai Hijau, format angka ringkas, dan saldo selalu ditampilkan.</p>'
     + '<p><strong>Changelog v1.1.5</strong><br>Dashboard selalu memilih endpoint resmi terbaru dari <code>endpoint.txt</code>; URL deployment lama di localStorage tidak dipakai lebih dulu.</p>'
     + '<p><strong>Changelog v1.1.4</strong><br>Pembayaran kewajiban dari kas dan pelunasan non-kas dari pendapatan usaha dipisahkan, sehingga laporan bulanan tidak mencampur keduanya.</p>'
@@ -5955,8 +6323,9 @@ function manageHelpHtml(){
     + '<p><strong>Changelog v1.1.2</strong><br>Tombol catat pelunasan non-kas dari pendapatan usaha pada rincian kewajiban, tanpa mengurangi saldo BSI/DANA/Tunai.</p>'
     + '<p><strong>Changelog v1.1.1</strong><br>Indikator kewajiban aktif di Beranda, penanda jumlah kewajiban di menu Akun, dan status pembayaran terakhir per kewajiban.</p>'
     + '<p><strong>Changelog v1.1.0</strong><br>Pengaturan dirapikan, mode privasi dan format angka, ekspor CSV/JSON, serta pengelolaan akun, kategori, target, dan rencana saving.</p>'
-    + '<p><strong>PIN</strong><br>PIN tidak pernah ditampilkan di halaman ini. Gunakan tombol Ubah PIN di Pengaturan. Jika lupa, reset lewat editor Apps Script.</p>'
+    + '<p><strong>PIN</strong><br>PIN tidak pernah ditampilkan di halaman ini. Gunakan halaman Ubah PIN di Pengaturan. Jika lupa, reset lewat editor Apps Script.</p>'
     + '<p><strong>Data</strong><br>Semua data berasal dari Google Sheets pribadi. Ekspor tidak memuat PIN atau token sesi.</p>'
+    + '<p><strong>Pengingat</strong><br>Pengingat bulanan disimpan aman di tab Rencana dan hanya bisa diubah dengan PIN. Lonceng di Beranda menampilkan pembayaran yang mendekati atau melewati tanggal jatuh tempo.</p>'
     + '<p><strong>Target &amp; anggaran</strong><br>Periode anggaran mengikuti bulan kalender dan direset tanggal 1.</p>'
     + '</div>';
 }
